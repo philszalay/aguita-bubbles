@@ -4,8 +4,8 @@ body {
     overflow: hidden;
     margin: 0;
     padding: 0;
+    /* cursor: none !important; */
 }
-
 
 .webgl {
     width: 100vw;

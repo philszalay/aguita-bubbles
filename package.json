@@ -9,6 +9,8 @@
   "dependencies": {
     "@babel/core": "^7.12.10",
     "@babel/preset-env": "^7.12.11",
+    "@dimforge/rapier3d": "^0.14.0",
+    "@dimforge/rapier3d-compat": "^0.14.0",
     "babel-loader": "^8.2.2",
     "cannon": "^0.6.2",
     "clean-webpack-plugin": "^3.0.0",
@@ -31,6 +33,8 @@
     "webpack-merge": "^5.7.3"
   },
   "devDependencies": {
+    "@types/dat.gui": "^0.7.13",
+    "dat.gui": "^0.7.9",
     "eslint": "^8.18.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.26.0",

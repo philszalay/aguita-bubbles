@@ -11,6 +11,9 @@ module.exports = (env, argv) => {
       path: path.resolve(__dirname, '../dist'),
       publicPath: (argv.mode === 'production' && env.github === 'true') ? '/threejs-boilerplate/' : '/'
     },
+    experiments: {
+      asyncWebAssembly: true
+    },
     plugins:
       [
         new HtmlWebpackPlugin({
@@ -28,6 +31,11 @@ module.exports = (env, argv) => {
           {
             test: /\.(html)$/,
             use: ['html-loader']
+          },
+
+          {
+            test: /\.wasm$/,
+            type: 'webassembly/async'
           },
 
           // JS
