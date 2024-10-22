@@ -143,7 +143,6 @@ export default class ThreeJsDraft {
      */
     this.addObjects()
 
-    this.renderer.render(this.scene, this.camera)
     /**
      * Animation Loop
      */
@@ -151,50 +150,70 @@ export default class ThreeJsDraft {
   }
 
   getBody(RAPIER, world) {
-    const minSize = 0.2;
+    const minSize = 0.25;
     const maxSize = 0.25;
     const size = minSize + Math.random() * (maxSize - minSize);
-    const range = 6;
-    const density = size * 0.5;
+    const range = 4;
+    const density = 0.2;
     const x = Math.random() * range - range * 0.5;
     const y = Math.random() * range - range * 0.5 + 3;
-    const z = Math.random() * range - range * 0.5;
+    const z = Math.random() * range - range * 0.5 + 1;
+
     // physics
     const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(x, y, z)
-      .setLinearDamping(5)
-      .setAngularDamping(5);
+      .setLinearDamping(5);
 
     const rigid = world.createRigidBody(rigidBodyDesc);
     const colliderDesc = RAPIER.ColliderDesc.ball(size).setDensity(density);
     world.createCollider(colliderDesc, rigid);
 
+    // Ball geometry and material
     const geometry = new THREE.IcosahedronGeometry(size, 1);
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       flatShading: true
     });
+
     const mesh = new THREE.Mesh(geometry, material);
 
     const wireMat = new THREE.MeshBasicMaterial({
       color: 0x990000,
       wireframe: true
     });
+
     const wireMesh = new THREE.Mesh(geometry, wireMat);
     wireMesh.scale.setScalar(1.01);
     mesh.add(wireMesh);
 
-    function update() {
+    function update(index) {
       const metaOffset = new THREE.Vector3(0.5, 0.5, 0.5);
 
       rigid.resetForces(true);
+
       const { x, y, z } = rigid.translation();
+
+      // Set gravitation center to mouse position
       const pos = new THREE.Vector3(x, y, z);
-      const dir = this.mousePosition.clone().sub(pos).normalize();
-      rigid.addForce(dir.multiplyScalar(0.45), true);
-      // mesh.position.set(x, y, z); // debug
+
+      const dir = this.mousePosition.clone().sub(pos);
+
+      const distance = dir.length(); // Calculate the distance
+
+      let falloff = index === 0 || index === 1 || index === 2 ? 1 : 3 * Math.exp(-distance);
+
+      if (falloff < 0.05) {
+        falloff = 0;
+      }
+
+      // Apply force based on direction and falloff (scaled force)
+      const force = dir.normalize().multiplyScalar(falloff * 1.0); // Adjust the base force as needed
+      rigid.addForce(force, true); // Apply the force at the center of the body
 
       pos.multiplyScalar(0.1).add(metaOffset);
+
+      mesh.position.set(x, y, z);
+
       return pos;
     }
 
@@ -213,12 +232,12 @@ export default class ThreeJsDraft {
     for (let i = 0; i < this.numBodies; i++) {
       const body = this.getBody(RAPIER, this.world);
       this.bodies.push(body);
-      // this.scene.add(body.mesh); // debug
+      this.scene.add(body.mesh); // debug
     }
 
     /**
- * Metaballs
- */
+    * Metaballs
+    */
     this.metaMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
@@ -241,7 +260,6 @@ export default class ThreeJsDraft {
       9000 // max poly count
     );
 
-    // this.metaBalls.se(5);
     this.metaBalls.isolation = 500; // blobbiness /size
     this.metaBalls.scale.setScalar(5);
 
@@ -252,20 +270,16 @@ export default class ThreeJsDraft {
         const subtract = 10 // lighness / smoothness
 
         this.bodies.forEach((b, i) => {
-          const { x, y, z } = b.update()
+          const { x, y, z } = b.update(i)
 
-          const ballx = x + this.noise2D(i * 1.85 + this.time * 0.25, i * 1.85 + this.time * 0.25) * 0.1
-          const bally = y + this.noise2D(i * 1.8 + this.time * 0.25, i * 1.8 + this.time * 0.25) * 0.1
-          const ballz = z + this.noise2D(i * 1.9 + this.time * 0.25, i * 1.9 + this.time * 0.25) * 0.1
-
-          this.metaBalls.addBall(ballx, bally, ballz, strength, subtract);
+          this.metaBalls.addBall(x, y, z, strength, subtract);
         });
 
         this.metaBalls.update();
       }
     }
 
-    this.scene.add(this.metaBalls)
+    this.scene.add(this.metaBalls) // debug metaballs
   }
 
   animate() {
@@ -273,7 +287,6 @@ export default class ThreeJsDraft {
     this.time += delta * 0.5
 
     this.world.step();
-    // this.bodies.forEach(b => b.update()); // debug
 
     this.metaBalls.userData.update();
 

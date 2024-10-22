@@ -9,7 +9,7 @@ module.exports = (env, argv) => {
     {
       filename: 'bundle.[contenthash].js',
       path: path.resolve(__dirname, '../dist'),
-      publicPath: (argv.mode === 'production' && env.github === 'true') ? '/threejs-boilerplate/' : '/'
+      publicPath: (argv.mode === 'production' && env.github === 'true') ? '/threejs-meta-balls/' : '/'
     },
     experiments: {
       asyncWebAssembly: true
