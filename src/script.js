@@ -4,17 +4,21 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { MarchingCubes } from 'three/addons/objects/MarchingCubes.js'
 import Vertex from './vertex.glsl'
 import Fragment from './fragment.glsl'
 import { createNoise2D } from 'simplex-noise'
 import RAPIER from '@dimforge/rapier3d-compat';
+import { MarchingCubes } from './MarchingCubes'
+import logoCoordinates from './logoCoordinates.txt'
+
+const SETUP = false;
 
 export default class ThreeJsDraft {
   constructor() {
     /**
      * Variables
     */
+
     this.canvas = document.querySelector('canvas.webgl')
     this.width = window.innerWidth
     this.height = window.innerHeight
@@ -38,7 +42,7 @@ export default class ThreeJsDraft {
      * Camera
      */
     this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 1000)
-    this.camera.position.z = 5
+    this.camera.position.z = 6
 
     this.clock = new THREE.Clock()
 
@@ -63,7 +67,7 @@ export default class ThreeJsDraft {
      * Rapier
      */
     this.initRapier()
-    this.numBodies = 20;
+    this.numBodies = 10;
     this.bodies = []
 
     /**
@@ -200,7 +204,9 @@ export default class ThreeJsDraft {
 
       const distance = dir.length(); // Calculate the distance
 
-      let falloff = index === 0 || index === 1 || index === 2 ? 1 : 3 * Math.exp(-distance);
+      // let falloff = index === 0 || index === 1 || index === 2 ? 1 : 3 * Math.exp(-distance);
+
+      let falloff = index === 0 || index === 1 || index === 2 ? 1 : 1 * Math.exp(-distance * 0.5);
 
       if (falloff < 0.05) {
         falloff = 0;
@@ -253,33 +259,62 @@ export default class ThreeJsDraft {
     })
 
     this.metaBalls = new MarchingCubes(
-      96,
-      this.metaMaterial,
+      96, // resolution
+      new THREE.MeshBasicMaterial({
+        color: 'green',
+        wireframe: true
+      }),
+      // this.metaMaterial,
       true, // enable UVs
-      true, // enable colors
-      9000 // max poly count
+      false, // enable colors
+      10000 // max poly count
     );
 
     this.metaBalls.isolation = 500; // blobbiness /size
+
     this.metaBalls.scale.setScalar(5);
+
+    if (SETUP) {
+      // Read logo txt file
+      const factor = 1;
+
+      const lines = logoCoordinates.split('\n').filter(line => line.trim() !== '');
+      lines.forEach(line => {
+        const values = line.split(',').map(Number);
+        if (values.length === 4) {
+          this.metaBalls.addBall(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.5, 500 * values[0], 50000);
+        } else {
+          console.warn(`Skipping line: ${line}`);
+        }
+      });
+      this.metaBalls.update();
+      console.log(Object.values(this.metaBalls.getNormalCache()));
+      console.log(Object.values(this.metaBalls.getField()));
+      console.log(Object.values(this.metaBalls.getPalette()));
+    }
 
     this.metaBalls.userData = {
       update: () => {
-        this.metaBalls.reset()
-        const strength = 0.5; // size-y
-        const subtract = 10 // lighness / smoothness
+        if (!SETUP) {
+          this.metaBalls.reset();
+          const strength = 0.5; // size-y
+          const subtract = 10; // lighness / smoothness
 
-        this.bodies.forEach((b, i) => {
-          const { x, y, z } = b.update(i)
+          this.bodies.forEach((b, i) => {
+            const { x, y, z } = b.update(i);
+            this.metaBalls.addBall(x, y, z, strength, subtract);
+          });
 
-          this.metaBalls.addBall(x, y, z, strength, subtract);
-        });
-
-        this.metaBalls.update();
+          this.metaBalls.update();
+        } else {
+          this.bodies.forEach((b, i) => {
+            b.update(i);
+          });
+        }
       }
     }
 
-    this.scene.add(this.metaBalls) // debug metaballs
+    this.scene.add(this.metaBalls);
   }
 
   animate() {

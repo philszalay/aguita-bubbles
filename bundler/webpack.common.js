@@ -99,6 +99,12 @@ module.exports = (env, argv) => {
               ]
           },
 
+          // TXT files
+          {
+            test: /\.txt$/i,
+            use: 'raw-loader'
+          },
+
           // Music
           {
             test: /\.wav$/,
