@@ -11,7 +11,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { MarchingCubes } from './MarchingCubes'
 import logoCoordinates from './logoCoordinates.txt'
 
-const SETUP = false;
+const SETUP = true;
 
 export default class ThreeJsDraft {
   constructor() {
@@ -266,11 +266,10 @@ export default class ThreeJsDraft {
       }),
       // this.metaMaterial,
       true, // enable UVs
-      false, // enable colors
       10000 // max poly count
     );
 
-    this.metaBalls.isolation = 500; // blobbiness /size
+    this.metaBalls.isolation = 0.75; // blobbiness /size
 
     this.metaBalls.scale.setScalar(5);
 
@@ -279,10 +278,23 @@ export default class ThreeJsDraft {
       const factor = 1;
 
       const lines = logoCoordinates.split('\n').filter(line => line.trim() !== '');
-      lines.forEach(line => {
+      lines.forEach((line, index) => {
+        if (index % 1 !== 0) {
+          return;
+        }
+
         const values = line.split(',').map(Number);
         if (values.length === 4) {
-          this.metaBalls.addBall(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.5, 500 * values[0], 50000);
+          // Usage example:
+          // const subtractValue = 2500; // Adjust for softer or sharper edges
+          // const strengthValue = 50 * values[0];
+
+          // console.log('Desired Radius:', desiredRadius);
+          // console.log('Calculated Strength:', strengthValue);
+          // console.log('Subtract Value:', subtractValue);
+
+          // this.metaBalls.addBall(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.5, strengthValue, subtractValue);
+          this.metaBalls.addBallWithRadius(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.5, 2 * values[0]);
         } else {
           console.warn(`Skipping line: ${line}`);
         }
@@ -290,7 +302,6 @@ export default class ThreeJsDraft {
       this.metaBalls.update();
       console.log(Object.values(this.metaBalls.getNormalCache()));
       console.log(Object.values(this.metaBalls.getField()));
-      console.log(Object.values(this.metaBalls.getPalette()));
     }
 
     this.metaBalls.userData = {
@@ -315,6 +326,12 @@ export default class ThreeJsDraft {
     }
 
     this.scene.add(this.metaBalls);
+  }
+
+  calculateStrength(radius, subtract) {
+    // Calculate the strength based on the desired radius and subtract value
+    const strength = subtract * (radius * radius);
+    return strength;
   }
 
   animate() {

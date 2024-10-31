@@ -10,16 +10,12 @@
 import {
 	BufferAttribute,
 	BufferGeometry,
-	Color,
 	DynamicDrawUsage,
 	Mesh
 } from 'three';
 
 import { field as savedField } from './field.js'
-// eslint-disable-next-line no-unused-vars
-import { normalCache as savedNormalCache } from './normalCache.js'
-// eslint-disable-next-line no-unused-vars
-import { palette as savedPalette } from './palette.js'
+// import { normalCache as savedNormalCache } from './normalCache.js'
 
 /* eslint-disable semi */
 /* eslint-disable space-before-function-paren */
@@ -30,7 +26,7 @@ import { palette as savedPalette } from './palette.js'
 
 class MarchingCubes extends Mesh {
 
-	constructor(resolution, material, enableUvs = false, enableColors = false, maxPolyCount = 10000) {
+	constructor(resolution, material, enableUvs = false, maxPolyCount = 10000) {
 
 		const geometry = new BufferGeometry();
 
@@ -44,10 +40,8 @@ class MarchingCubes extends Mesh {
 
 		const vlist = new Float32Array(12 * 3);
 		const nlist = new Float32Array(12 * 3);
-		const clist = new Float32Array(12 * 3);
 
 		this.enableUvs = enableUvs;
-		this.enableColors = enableColors;
 
 		// functions have to be object properties
 		// prototype functions kill performance
@@ -76,7 +70,6 @@ class MarchingCubes extends Mesh {
 
 			this.field = new Float32Array(this.size3);
 			this.normal_cache = new Float32Array(this.size3 * 3);
-			this.palette = new Float32Array(this.size3 * 3);
 
 			//
 
@@ -102,16 +95,6 @@ class MarchingCubes extends Mesh {
 				geometry.setAttribute('uv', uvAttribute);
 
 			}
-
-			if (this.enableColors) {
-
-				this.colorArray = new Float32Array(maxVertexCount * 3);
-				const colorAttribute = new BufferAttribute(this.colorArray, 3);
-				colorAttribute.setUsage(DynamicDrawUsage);
-				geometry.setAttribute('color', colorAttribute);
-
-			}
-
 		};
 
 		///////////////////////
@@ -137,10 +120,6 @@ class MarchingCubes extends Mesh {
 			nlist[offset + 1] = lerp(nc[q + 1], nc[q + 4], mu);
 			nlist[offset + 2] = lerp(nc[q + 2], nc[q + 5], mu);
 
-			clist[offset + 0] = lerp(scope.palette[c_offset1 * 3 + 0], scope.palette[c_offset2 * 3 + 0], mu);
-			clist[offset + 1] = lerp(scope.palette[c_offset1 * 3 + 1], scope.palette[c_offset2 * 3 + 1], mu);
-			clist[offset + 2] = lerp(scope.palette[c_offset1 * 3 + 2], scope.palette[c_offset2 * 3 + 2], mu);
-
 		}
 
 		function VIntY(q, offset, isol, x, y, z, valp1, valp2, c_offset1, c_offset2) {
@@ -158,10 +137,6 @@ class MarchingCubes extends Mesh {
 			nlist[offset + 1] = lerp(nc[q + 1], nc[q2 + 1], mu);
 			nlist[offset + 2] = lerp(nc[q + 2], nc[q2 + 2], mu);
 
-			clist[offset + 0] = lerp(scope.palette[c_offset1 * 3 + 0], scope.palette[c_offset2 * 3 + 0], mu);
-			clist[offset + 1] = lerp(scope.palette[c_offset1 * 3 + 1], scope.palette[c_offset2 * 3 + 1], mu);
-			clist[offset + 2] = lerp(scope.palette[c_offset1 * 3 + 2], scope.palette[c_offset2 * 3 + 2], mu);
-
 		}
 
 		function VIntZ(q, offset, isol, x, y, z, valp1, valp2, c_offset1, c_offset2) {
@@ -178,11 +153,6 @@ class MarchingCubes extends Mesh {
 			nlist[offset + 0] = lerp(nc[q + 0], nc[q2 + 0], mu);
 			nlist[offset + 1] = lerp(nc[q + 1], nc[q2 + 1], mu);
 			nlist[offset + 2] = lerp(nc[q + 2], nc[q2 + 2], mu);
-
-			clist[offset + 0] = lerp(scope.palette[c_offset1 * 3 + 0], scope.palette[c_offset2 * 3 + 0], mu);
-			clist[offset + 1] = lerp(scope.palette[c_offset1 * 3 + 1], scope.palette[c_offset2 * 3 + 1], mu);
-			clist[offset + 2] = lerp(scope.palette[c_offset1 * 3 + 2], scope.palette[c_offset2 * 3 + 2], mu);
-
 		}
 
 		function compNorm(q) {
@@ -397,7 +367,6 @@ class MarchingCubes extends Mesh {
 				posnormtriv(
 					vlist,
 					nlist,
-					clist,
 					3 * triTable[o1],
 					3 * triTable[o2],
 					3 * triTable[o3]
@@ -412,7 +381,7 @@ class MarchingCubes extends Mesh {
 
 		}
 
-		function posnormtriv(pos, norm, colors, o1, o2, o3) {
+		function posnormtriv(pos, norm, o1, o2, o3) {
 
 			const c = scope.count * 3;
 
@@ -483,24 +452,6 @@ class MarchingCubes extends Mesh {
 
 			}
 
-			// colors
-
-			if (scope.enableColors) {
-
-				scope.colorArray[c + 0] = colors[o1 + 0];
-				scope.colorArray[c + 1] = colors[o1 + 1];
-				scope.colorArray[c + 2] = colors[o1 + 2];
-
-				scope.colorArray[c + 3] = colors[o2 + 0];
-				scope.colorArray[c + 4] = colors[o2 + 1];
-				scope.colorArray[c + 5] = colors[o2 + 2];
-
-				scope.colorArray[c + 6] = colors[o3 + 0];
-				scope.colorArray[c + 7] = colors[o3 + 1];
-				scope.colorArray[c + 8] = colors[o3 + 2];
-
-			}
-
 			scope.count += 3;
 
 		}
@@ -512,34 +463,21 @@ class MarchingCubes extends Mesh {
 		// Adds a reciprocal ball (nice and blobby) that, to be fast, fades to zero after
 		// a fixed distance, determined by strength and subtract.
 
-		this.addBall = function (ballx, bally, ballz, strength, subtract, colors) {
+		this.addBallWithRadius = function (x, y, z, radius) {
+			const radiusNew = radius * 2
+
+			const subtract = 0.012; // Define based on desired softness of metaball boundary
+			const strength = (radiusNew ** 2) * subtract; // Adjust factor as needed
+
+			console.log('strength: ', strength, 'subtract: ', subtract);
+
+			// Call original method with calculated strength and other parameters
+			this.addBall(x, y, z, strength, subtract);
+		};
+
+		this.addBall = function (ballx, bally, ballz, strength, subtract) {
 			const sign = Math.sign(strength);
 			strength = Math.abs(strength);
-			const userDefineColor = !(colors === undefined || colors === null);
-			let ballColor = new Color(ballx, bally, ballz);
-
-			if (userDefineColor) {
-
-				try {
-
-					ballColor =
-						colors instanceof Color
-							? colors
-							: Array.isArray(colors)
-								? new Color(
-									Math.min(Math.abs(colors[0]), 1),
-									Math.min(Math.abs(colors[1]), 1),
-									Math.min(Math.abs(colors[2]), 1)
-								)
-								: new Color(colors);
-
-				} catch (err) {
-
-					ballColor = new Color(ballx, bally, ballz);
-
-				}
-
-			}
 
 			// Let's solve the equation to find the radius:
 			// 1.0 / (0.000001 + radius^2) * strength - subtract = 0
@@ -589,153 +527,10 @@ class MarchingCubes extends Mesh {
 
 						fx = x / this.size - ballx;
 						val = strength / (0.000001 + fx * fx + fy2 + fz2) - subtract;
+						// console.log('val: ', val);
 						if (val > 0.0) {
 							this.field[y_offset + x] += val * sign;
-
-							// optimization
-							// http://www.geisswerks.com/ryan/BLOBS/blobs.html
-							const ratio =
-								Math.sqrt((x - xs) * (x - xs) + (y - ys) * (y - ys) + (z - zs) * (z - zs)) / radius;
-							const contrib =
-								1 - ratio * ratio * ratio * (ratio * (ratio * 6 - 15) + 10);
-							this.palette[(y_offset + x) * 3 + 0] += ballColor.r * contrib;
-							this.palette[(y_offset + x) * 3 + 1] += ballColor.g * contrib;
-							this.palette[(y_offset + x) * 3 + 2] += ballColor.b * contrib;
-
 						}
-
-					}
-
-				}
-
-			}
-
-		};
-
-		this.addPlaneX = function (strength, subtract) {
-
-			// cache attribute lookups
-			const size = this.size,
-				yd = this.yd,
-				zd = this.zd,
-				field = this.field;
-
-			let x,
-				y,
-				z,
-				xx,
-				val,
-				xdiv,
-				cxy,
-				dist = size * Math.sqrt(strength / subtract);
-
-			if (dist > size) dist = size;
-
-			for (x = 0; x < dist; x++) {
-
-				xdiv = x / size;
-				xx = xdiv * xdiv;
-				val = strength / (0.0001 + xx) - subtract;
-
-				if (val > 0.0) {
-
-					for (y = 0; y < size; y++) {
-
-						cxy = x + y * yd;
-
-						for (z = 0; z < size; z++) {
-
-							field[zd * z + cxy] += val;
-
-						}
-
-					}
-
-				}
-
-			}
-
-		};
-
-		this.addPlaneY = function (strength, subtract) {
-
-			// cache attribute lookups
-			const size = this.size,
-				yd = this.yd,
-				zd = this.zd,
-				field = this.field;
-
-			let x,
-				y,
-				z,
-				yy,
-				val,
-				ydiv,
-				cy,
-				cxy,
-				dist = size * Math.sqrt(strength / subtract);
-
-			if (dist > size) dist = size;
-
-			for (y = 0; y < dist; y++) {
-
-				ydiv = y / size;
-				yy = ydiv * ydiv;
-				val = strength / (0.0001 + yy) - subtract;
-
-				if (val > 0.0) {
-
-					cy = y * yd;
-
-					for (x = 0; x < size; x++) {
-
-						cxy = cy + x;
-
-						for (z = 0; z < size; z++) field[zd * z + cxy] += val;
-
-					}
-
-				}
-
-			}
-
-		};
-
-		this.addPlaneZ = function (strength, subtract) {
-
-			// cache attribute lookups
-
-			const size = this.size,
-				yd = this.yd,
-				zd = this.zd,
-				field = this.field;
-
-			let x,
-				y,
-				z,
-				zz,
-				val,
-				zdiv,
-				cz,
-				cyz,
-				dist = size * Math.sqrt(strength / subtract);
-
-			if (dist > size) dist = size;
-
-			for (z = 0; z < dist; z++) {
-
-				zdiv = z / size;
-				zz = zdiv * zdiv;
-				val = strength / (0.0001 + zz) - subtract;
-				if (val > 0.0) {
-
-					cz = zd * z;
-
-					for (y = 0; y < size; y++) {
-
-						cyz = cz + y * yd;
-
-						for (x = 0; x < size; x++) field[cyz + x] += val;
 
 					}
 
@@ -816,10 +611,6 @@ class MarchingCubes extends Mesh {
 
 		};
 
-		this.getPalette = function () {
-			return this.palette;
-		};
-
 		this.getField = function () {
 			return this.field;
 		};
@@ -835,7 +626,6 @@ class MarchingCubes extends Mesh {
 
 			// 	// this.field[i] = 0.0;
 			// 	// this.normal_cache[i] = 0.0;
-			// 	// this.palette[i * 3] = this.palette[i * 3 + 1] = this.palette[
 			// 	// 	i * 3 + 2
 			// 	// ] = 0.0;
 
@@ -843,7 +633,6 @@ class MarchingCubes extends Mesh {
 
 			this.field = savedField.slice();
 			// this.normal_cache = savedNormalCache.slice();
-			// this.palette = savedPalette.slice();
 		};
 
 		this.update = function () {
@@ -887,7 +676,6 @@ class MarchingCubes extends Mesh {
 			geometry.getAttribute('normal').needsUpdate = true;
 
 			if (this.enableUvs) geometry.getAttribute('uv').needsUpdate = true;
-			if (this.enableColors) geometry.getAttribute('color').needsUpdate = true;
 
 			// safety check
 
