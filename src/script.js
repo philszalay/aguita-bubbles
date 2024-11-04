@@ -11,7 +11,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { MarchingCubes } from './MarchingCubes'
 import logoCoordinates from './logoCoordinates.txt'
 
-const SETUP = true;
+const SETUP = false;
 
 export default class ThreeJsDraft {
   constructor() {
@@ -259,14 +259,14 @@ export default class ThreeJsDraft {
     })
 
     this.metaBalls = new MarchingCubes(
-      96, // resolution
-      new THREE.MeshBasicMaterial({
-        color: 'green',
-        wireframe: true
-      }),
-      // this.metaMaterial,
+      100, // resolution
+      // new THREE.MeshBasicMaterial({
+      //   color: 'green',
+      //   wireframe: true
+      // }),
+      this.metaMaterial,
       true, // enable UVs
-      10000 // max poly count
+      100000 // max poly count
     );
 
     this.metaBalls.isolation = 0.75; // blobbiness /size
@@ -277,9 +277,13 @@ export default class ThreeJsDraft {
       // Read logo txt file
       const factor = 1;
 
+      // this.metaBalls.addBallWithRadius(0.5, 0.5, 0.5, 0.014719325117766857);
+      // this.metaBalls.addBallWithRadius(0.5, 0.55, 0.5, 0.014719325117766857);
+      // this.metaBalls.addBallWithRadius(0.55, 0.5, 0.5, 0.024719325117766857);
+
       const lines = logoCoordinates.split('\n').filter(line => line.trim() !== '');
       lines.forEach((line, index) => {
-        if (index % 1 !== 0) {
+        if (index === -1) {
           return;
         }
 
@@ -294,7 +298,7 @@ export default class ThreeJsDraft {
           // console.log('Subtract Value:', subtractValue);
 
           // this.metaBalls.addBall(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.5, strengthValue, subtractValue);
-          this.metaBalls.addBallWithRadius(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.5, 2 * values[0]);
+          this.metaBalls.addBallWithRadius(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.4, 2 * values[0]);
         } else {
           console.warn(`Skipping line: ${line}`);
         }
@@ -308,8 +312,8 @@ export default class ThreeJsDraft {
       update: () => {
         if (!SETUP) {
           this.metaBalls.reset();
-          const strength = 0.5; // size-y
-          const subtract = 10; // lighness / smoothness
+          const strength = 0.01; // size-y
+          const subtract = 1; // lighness / smoothness
 
           this.bodies.forEach((b, i) => {
             const { x, y, z } = b.update(i);

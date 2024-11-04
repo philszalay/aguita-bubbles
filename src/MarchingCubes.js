@@ -464,16 +464,78 @@ class MarchingCubes extends Mesh {
 		// a fixed distance, determined by strength and subtract.
 
 		this.addBallWithRadius = function (x, y, z, radius) {
-			const radiusNew = radius * 2
-
-			const subtract = 0.012; // Define based on desired softness of metaball boundary
-			const strength = (radiusNew ** 2) * subtract; // Adjust factor as needed
-
-			console.log('strength: ', strength, 'subtract: ', subtract);
-
 			// Call original method with calculated strength and other parameters
-			this.addBall(x, y, z, strength, subtract);
+			this.addBallCustom(x + radius / 2, y + radius / 2, z + radius / 2, radius);
 		};
+
+		this.addBallCustom = function (ballx, bally, ballz, ballRadius) {
+			const strength = ballRadius;
+			const subtract = strength / (ballRadius * ballRadius);
+			const sign = Math.sign(strength);
+
+			// Let's solve the equation to find the radius:
+			// 1.0 / (0.000001 + radius^2) * strength - subtract = 0
+			// strength / (radius^2) = subtract
+			// strength = subtract * radius^2
+			// radius^2 = strength / subtract
+			// radius = sqrt(strength / subtract)
+
+			// const radius = this.size * userRadius,
+			const radius = this.size * Math.sqrt(strength / subtract),
+				zs = ballz * this.size,
+				ys = bally * this.size,
+				xs = ballx * this.size;
+
+			console.log('ball radius:', radius, 'strength:', strength, 'subtract:', subtract);
+
+			let min_z = Math.floor(zs - radius);
+			if (min_z < 1) min_z = 1;
+			let max_z = Math.floor(zs + radius);
+			if (max_z > this.size - 1) max_z = this.size - 1;
+			let min_y = Math.floor(ys - radius);
+			if (min_y < 1) min_y = 1;
+			let max_y = Math.floor(ys + radius);
+			if (max_y > this.size - 1) max_y = this.size - 1;
+			let min_x = Math.floor(xs - radius);
+			if (min_x < 1) min_x = 1;
+			let max_x = Math.floor(xs + radius);
+			if (max_x > this.size - 1) max_x = this.size - 1;
+
+			// Don't polygonize in the outer layer because normals aren't
+			// well-defined there.
+
+			let x, y, z, y_offset, z_offset, fx, fy, fz, fz2, fy2, val;
+
+			for (z = min_z; z < max_z; z++) {
+
+				z_offset = this.size2 * z;
+				fz = z / this.size - ballz;
+				fz2 = fz * fz;
+
+				for (y = min_y; y < max_y; y++) {
+
+					y_offset = z_offset + this.size * y;
+					fy = y / this.size - bally;
+					fy2 = fy * fy;
+
+					for (x = min_x; x < max_x; x++) {
+
+						fx = x / this.size - ballx;
+						// console.log('base value', (fx * fx + fy2 + fz2));
+						// console.log('base value with strength', strength / (fx * fx + fy2 + fz2));
+						val = strength / (fx * fx + fy2 + fz2) - subtract;
+						// val = 1 * (fx * fx + fy2 + fz2);
+						// console.log('val: ', val);
+						if (val > 0.0) {
+							this.field[y_offset + x] += val * sign;
+						}
+
+					}
+
+				}
+
+			}
+		}
 
 		this.addBall = function (ballx, bally, ballz, strength, subtract) {
 			const sign = Math.sign(strength);
@@ -527,7 +589,6 @@ class MarchingCubes extends Mesh {
 
 						fx = x / this.size - ballx;
 						val = strength / (0.000001 + fx * fx + fy2 + fz2) - subtract;
-						// console.log('val: ', val);
 						if (val > 0.0) {
 							this.field[y_offset + x] += val * sign;
 						}
@@ -537,6 +598,7 @@ class MarchingCubes extends Mesh {
 				}
 
 			}
+
 
 		};
 
@@ -555,59 +617,6 @@ class MarchingCubes extends Mesh {
 
 			const index = this.size2 * z + this.size * y + x;
 			return this.field[index];
-
-		};
-
-		this.blur = function (intensity = 1) {
-
-			const field = this.field;
-			const fieldCopy = field.slice();
-			const size = this.size;
-			const size2 = this.size2;
-			for (let x = 0; x < size; x++) {
-
-				for (let y = 0; y < size; y++) {
-
-					for (let z = 0; z < size; z++) {
-
-						const index = size2 * z + size * y + x;
-						let val = fieldCopy[index];
-						let count = 1;
-
-						for (let x2 = - 1; x2 <= 1; x2 += 2) {
-
-							const x3 = x2 + x;
-							if (x3 < 0 || x3 >= size) continue;
-
-							for (let y2 = - 1; y2 <= 1; y2 += 2) {
-
-								const y3 = y2 + y;
-								if (y3 < 0 || y3 >= size) continue;
-
-								for (let z2 = - 1; z2 <= 1; z2 += 2) {
-
-									const z3 = z2 + z;
-									if (z3 < 0 || z3 >= size) continue;
-
-									const index2 = size2 * z3 + size * y3 + x3;
-									const val2 = fieldCopy[index2];
-
-									count++;
-									val += intensity * (val2 - val) / count;
-
-								}
-
-							}
-
-						}
-
-						field[index] = val;
-
-					}
-
-				}
-
-			}
 
 		};
 
