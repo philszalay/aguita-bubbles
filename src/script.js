@@ -42,7 +42,7 @@ export default class ThreeJsDraft {
      * Camera
      */
     this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 1000)
-    this.camera.position.z = 6
+    this.camera.position.z = 1
 
     this.clock = new THREE.Clock()
 
@@ -154,11 +154,11 @@ export default class ThreeJsDraft {
   }
 
   getBody(RAPIER, world) {
-    const minSize = 0.25;
-    const maxSize = 0.25;
+    const minSize = 0.05;
+    const maxSize = 0.05;
     const size = minSize + Math.random() * (maxSize - minSize);
-    const range = 4;
-    const density = 0.2;
+    const range = 0.1;
+    const density = 100;
     const x = Math.random() * range - range * 0.5;
     const y = Math.random() * range - range * 0.5 + 3;
     const z = Math.random() * range - range * 0.5 + 1;
@@ -241,6 +241,15 @@ export default class ThreeJsDraft {
       this.scene.add(body.mesh); // debug
     }
 
+    // add ambient light
+    const lightDown = new THREE.DirectionalLight(0xffffff, 0.5);
+    const lightUp = new THREE.DirectionalLight(0xffffff, 0.5);
+    const lightFront = new THREE.DirectionalLight(0xffffff, 1);
+    lightUp.position.set(0, -1, 0);
+    lightFront.position.set(0, 0, 1);
+
+    this.scene.add(lightDown, lightUp, lightFront);
+
     /**
     * Metaballs
     */
@@ -260,18 +269,20 @@ export default class ThreeJsDraft {
 
     this.metaBalls = new MarchingCubes(
       100, // resolution
-      // new THREE.MeshBasicMaterial({
-      //   color: 'green',
-      //   wireframe: true
-      // }),
-      this.metaMaterial,
+      new THREE.MeshStandardMaterial({
+        // wireframe: true,
+        color: '#049ef4',
+        roughness: 0.22,
+        metalness: 0.7
+      }),
+      // this.metaMaterial,
       true, // enable UVs
       100000 // max poly count
     );
 
     this.metaBalls.isolation = 0.75; // blobbiness /size
 
-    this.metaBalls.scale.setScalar(5);
+    this.metaBalls.scale.setScalar(1);
 
     if (SETUP) {
       // Read logo txt file
