@@ -7,11 +7,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import Vertex from './vertex.glsl'
 import Fragment from './fragment.glsl'
 import { createNoise2D } from 'simplex-noise'
-import RAPIER from '@dimforge/rapier3d-compat';
-import { MarchingCubes } from './MarchingCubes'
 import logoCoordinates from './logoCoordinates.txt'
-
-const SETUP = false;
 
 export default class ThreeJsDraft {
   constructor() {
@@ -46,7 +42,7 @@ export default class ThreeJsDraft {
 
     this.clock = new THREE.Clock()
 
-    this.time = 0.0
+    this.time = Date.now()
 
     /**
      * Renderer
@@ -57,18 +53,14 @@ export default class ThreeJsDraft {
     this.renderer.setSize(this.width, this.height)
     this.renderer.setPixelRatio(Math.min(this.devicePixelRatio, 2))
 
+    this.backgroundColor = new THREE.Color(0x3399ee);
+    this.renderer.setClearColor(this.backgroundColor, 1);
+
     /**
      * Controls
      */
     this.orbitControls = new OrbitControls(this.camera, this.canvas)
     this.orbitControls.enabled = false
-
-    /**
-     * Rapier
-     */
-    this.initRapier()
-    this.numBodies = 10;
-    this.bodies = []
 
     /**
      * Resize
@@ -121,16 +113,6 @@ export default class ThreeJsDraft {
     this.loadingManager.onError = function (url) {
       console.log('There was an error loading ' + url)
     }
-  }
-
-  loadAssets() {
-    // const textureLoader = new THREE.TextureLoader(this.loadingManager)
-  }
-
-  async initRapier() {
-    await RAPIER.init();
-    const gravity = { x: 0.0, y: 0, z: 0.0 };
-    this.world = new RAPIER.World(gravity);
 
     /**
      * Load Assets
@@ -145,7 +127,59 @@ export default class ThreeJsDraft {
     /**
      * Objects
      */
-    this.addObjects()
+    this.createSphereTexture()
+
+    /**
+     * Lights
+     */
+    this.addLight()
+
+    // Create a ray marching plane
+    const geometry = new THREE.PlaneGeometry();
+    this.material = new THREE.ShaderMaterial();
+    this.rayMarchPlane = new THREE.Mesh(geometry, this.material);
+
+    // Get the wdith and height of the near plane
+    const nearPlaneWidth = this.camera.near * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect * 2;
+    const nearPlaneHeight = nearPlaneWidth / this.camera.aspect;
+
+    // Scale the ray marching plane
+    this.rayMarchPlane.scale.set(nearPlaneWidth, nearPlaneHeight, 1);
+
+    this.uniforms = {
+      u_eps: { value: 0.001 },
+      u_maxDis: { value: 1000 },
+      u_maxSteps: { value: 1000 },
+
+      u_clearColor: { value: this.backgroundColor },
+
+      u_camPos: { value: this.camera.position },
+      u_camToWorldMat: { value: this.camera.matrixWorld },
+      u_camInvProjMat: { value: this.camera.projectionMatrixInverse },
+
+      u_lightDir: { value: this.light.position },
+      u_lightColor: { value: this.light.color },
+
+      u_diffIntensity: { value: 0.5 },
+      u_specIntensity: { value: 3 },
+      u_ambientIntensity: { value: 0.15 },
+      u_shininess: { value: 16 },
+
+      u_time: { value: 0 },
+
+      u_sphereTexture: { value: this.sphereTexture },
+      u_numSpheres: { value: this.sphereCoordinates.length }
+    };
+
+    // Set material properties
+    this.material.uniforms = this.uniforms;
+    this.material.vertexShader = Vertex;
+    this.material.fragmentShader = Fragment;
+
+    this.scene.add(this.rayMarchPlane);
+
+    this.cameraForwardPos = new THREE.Vector3(0, 0, -1);
+    this.VECTOR3ZERO = new THREE.Vector3(0, 0, 0);
 
     /**
      * Animation Loop
@@ -153,77 +187,15 @@ export default class ThreeJsDraft {
     this.animate()
   }
 
-  getBody(RAPIER, world) {
-    const minSize = 0.05;
-    const maxSize = 0.05;
-    const size = minSize + Math.random() * (maxSize - minSize);
-    const range = 0.1;
-    const density = 100;
-    const x = Math.random() * range - range * 0.5;
-    const y = Math.random() * range - range * 0.5 + 3;
-    const z = Math.random() * range - range * 0.5 + 1;
+  loadAssets() {
+    // const textureLoader = new THREE.TextureLoader(this.loadingManager)
+  }
 
-    // physics
-    const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
-      .setTranslation(x, y, z)
-      .setLinearDamping(5);
-
-    const rigid = world.createRigidBody(rigidBodyDesc);
-    const colliderDesc = RAPIER.ColliderDesc.ball(size).setDensity(density);
-    world.createCollider(colliderDesc, rigid);
-
-    // Ball geometry and material
-    const geometry = new THREE.IcosahedronGeometry(size, 1);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      flatShading: true
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-
-    const wireMat = new THREE.MeshBasicMaterial({
-      color: 0x990000,
-      wireframe: true
-    });
-
-    const wireMesh = new THREE.Mesh(geometry, wireMat);
-    wireMesh.scale.setScalar(1.01);
-    mesh.add(wireMesh);
-
-    function update(index) {
-      const metaOffset = new THREE.Vector3(0.5, 0.5, 0.5);
-
-      rigid.resetForces(true);
-
-      const { x, y, z } = rigid.translation();
-
-      // Set gravitation center to mouse position
-      const pos = new THREE.Vector3(x, y, z);
-
-      const dir = this.mousePosition.clone().sub(pos);
-
-      const distance = dir.length(); // Calculate the distance
-
-      // let falloff = index === 0 || index === 1 || index === 2 ? 1 : 3 * Math.exp(-distance);
-
-      let falloff = index === 0 || index === 1 || index === 2 ? 1 : 1 * Math.exp(-distance * 0.5);
-
-      if (falloff < 0.05) {
-        falloff = 0;
-      }
-
-      // Apply force based on direction and falloff (scaled force)
-      const force = dir.normalize().multiplyScalar(falloff * 1.0); // Adjust the base force as needed
-      rigid.addForce(force, true); // Apply the force at the center of the body
-
-      pos.multiplyScalar(0.1).add(metaOffset);
-
-      mesh.position.set(x, y, z);
-
-      return pos;
-    }
-
-    return { mesh, rigid, update: update.bind(this) };
+  addLight() {
+    // add ambient light
+    this.light = new THREE.DirectionalLight(0xffffff, 1);
+    this.light.position.set(1, 1, 1);
+    this.scene.add(this.light);
   }
 
   addHelpers() {
@@ -234,113 +206,29 @@ export default class ThreeJsDraft {
     document.body.appendChild(this.stats.dom)
   }
 
-  addObjects() {
-    for (let i = 0; i < this.numBodies; i++) {
-      const body = this.getBody(RAPIER, this.world);
-      this.bodies.push(body);
-      this.scene.add(body.mesh); // debug
-    }
+  createSphereTexture() {
+    this.sphereCoordinates = logoCoordinates.split('\n').filter(line => line.trim() !== '');
 
-    // add ambient light
-    const lightDown = new THREE.DirectionalLight(0xffffff, 0.5);
-    const lightUp = new THREE.DirectionalLight(0xffffff, 0.5);
-    const lightFront = new THREE.DirectionalLight(0xffffff, 1);
-    lightUp.position.set(0, -1, 0);
-    lightFront.position.set(0, 0, 1);
+    const sphereData = new Float32Array(this.sphereCoordinates.length * 4);
 
-    this.scene.add(lightDown, lightUp, lightFront);
+    this.sphereCoordinates.forEach((line, index) => {
+      const values = line.split(',').map(Number);
 
-    /**
-    * Metaballs
-    */
-    this.metaMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-        uTime: { value: 1.0 },
-        uColor: { value: new THREE.Color(0x42a9f1) },
-        viewVector: { value: new THREE.Vector3(0, 0, 20) }
-      },
-      vertexShader: Vertex,
-      fragmentShader: Fragment,
-      side: THREE.DoubleSide,
-      transparent: true,
-      wireframe: false
-    })
+      sphereData[index * 4] = values[1];
+      sphereData[index * 4 + 1] = values[2];
+      sphereData[index * 4 + 2] = values[3];
+      sphereData[index * 4 + 3] = values[0];
+    });
 
-    this.metaBalls = new MarchingCubes(
-      100, // resolution
-      new THREE.MeshStandardMaterial({
-        // wireframe: true,
-        color: '#049ef4',
-        roughness: 0.22,
-        metalness: 0.7
-      }),
-      // this.metaMaterial,
-      true, // enable UVs
-      100000 // max poly count
+    this.sphereTexture = new THREE.DataTexture(
+      sphereData,
+      this.sphereCoordinates.length, // width (number of spheres)
+      1, // height
+      THREE.RGBAFormat,
+      THREE.FloatType
     );
 
-    this.metaBalls.isolation = 0.75; // blobbiness /size
-
-    this.metaBalls.scale.setScalar(1);
-
-    if (SETUP) {
-      // Read logo txt file
-      const factor = 1;
-
-      // this.metaBalls.addBallWithRadius(0.5, 0.5, 0.5, 0.014719325117766857);
-      // this.metaBalls.addBallWithRadius(0.5, 0.55, 0.5, 0.014719325117766857);
-      // this.metaBalls.addBallWithRadius(0.55, 0.5, 0.5, 0.024719325117766857);
-
-      const lines = logoCoordinates.split('\n').filter(line => line.trim() !== '');
-      lines.forEach((line, index) => {
-        if (index === -1) {
-          return;
-        }
-
-        const values = line.split(',').map(Number);
-        if (values.length === 4) {
-          // Usage example:
-          // const subtractValue = 2500; // Adjust for softer or sharper edges
-          // const strengthValue = 50 * values[0];
-
-          // console.log('Desired Radius:', desiredRadius);
-          // console.log('Calculated Strength:', strengthValue);
-          // console.log('Subtract Value:', subtractValue);
-
-          // this.metaBalls.addBall(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.5, strengthValue, subtractValue);
-          this.metaBalls.addBallWithRadius(factor * values[1] + 0.5, factor * values[2] + 0.5, factor * values[3] + 0.4, 2 * values[0]);
-        } else {
-          console.warn(`Skipping line: ${line}`);
-        }
-      });
-      this.metaBalls.update();
-      console.log(Object.values(this.metaBalls.getNormalCache()));
-      console.log(Object.values(this.metaBalls.getField()));
-    }
-
-    this.metaBalls.userData = {
-      update: () => {
-        if (!SETUP) {
-          this.metaBalls.reset();
-          const strength = 0.01; // size-y
-          const subtract = 1; // lighness / smoothness
-
-          this.bodies.forEach((b, i) => {
-            const { x, y, z } = b.update(i);
-            this.metaBalls.addBall(x, y, z, strength, subtract);
-          });
-
-          this.metaBalls.update();
-        } else {
-          this.bodies.forEach((b, i) => {
-            b.update(i);
-          });
-        }
-      }
-    }
-
-    this.scene.add(this.metaBalls);
+    this.sphereTexture.needsUpdate = true;
   }
 
   calculateStrength(radius, subtract) {
@@ -353,9 +241,11 @@ export default class ThreeJsDraft {
     const delta = this.clock.getDelta()
     this.time += delta * 0.5
 
-    this.world.step();
+    this.cameraForwardPos = this.camera.position.clone().add(this.camera.getWorldDirection(this.VECTOR3ZERO).multiplyScalar(this.camera.near));
+    this.rayMarchPlane.position.copy(this.cameraForwardPos);
+    this.rayMarchPlane.rotation.copy(this.camera.rotation);
 
-    this.metaBalls.userData.update();
+    this.uniforms.u_time.value = (Date.now() - this.time) / 1000;
 
     this.orbitControls.update()
     this.stats.update()
