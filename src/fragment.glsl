@@ -22,8 +22,6 @@ uniform float u_specIntensity;
 uniform float u_ambientIntensity;
 uniform float u_shininess;
 
-uniform float u_time;
-
 uniform sampler2D u_sphereTexture;
 uniform int u_numSpheres;
 
@@ -35,12 +33,18 @@ float smin(float a, float b, float k) {
 float scene(vec3 p) {
 	float minDistance = u_maxDis;
 	for(int i = 0; i < u_numSpheres; i++) {
-		vec4 sphereData = texture(u_sphereTexture, vec2(float(i) / float(u_numSpheres), 0.0));
+		vec4 sphereData = texture(u_sphereTexture, vec2(float(i) / float(u_numSpheres - 1), 0.0));
 		vec3 spherePos = sphereData.xyz;
 		float sphereRadius = sphereData.w;
 		float distanceToSphere = distance(p, spherePos) - sphereRadius;
-		minDistance = smin(minDistance, distanceToSphere, 0.005);
+		minDistance = smin(minDistance, distanceToSphere, 0.015);
+
+		// Early exit if close enough
+		if(minDistance < u_eps) {
+			return minDistance;
+		}
 	}
+
 	return minDistance;
 }
 
@@ -62,30 +66,6 @@ float rayMarch(vec3 ro, vec3 rd) {
 	}
 
 	return d; // finally, return scene distance
-}
-
-vec3 sceneCol(vec3 p) {
-	vec3 color1 = vec3(1, 0, 0); // Red
-	vec3 color2 = vec3(0, 0, 1); // Blue
-
-	float minDistance = u_maxDis;
-	float closestSphereIndex = -1.0;
-
-	for(int i = 0; i < u_numSpheres; i++) {
-		vec4 sphereData = texture(u_sphereTexture, vec2(float(i) / float(u_numSpheres), 0.0));
-		vec3 spherePos = sphereData.xyz;
-		float sphereRadius = sphereData.w;
-		float distanceToSphere = distance(p, spherePos) - sphereRadius;
-
-		if(distanceToSphere < minDistance) {
-			minDistance = distanceToSphere;
-			closestSphereIndex = float(i);
-		}
-	}
-
-    // Use closestSphereIndex to determine color
-	float h = closestSphereIndex / float(u_numSpheres);
-	return mix(color1, color2, h);
 }
 
 vec3 normal(vec3 p) // from https://iquilezles.org/articles/normalsSDF/
@@ -127,7 +107,9 @@ void main() {
 		float spec = pow(diff, u_shininess) * u_specIntensity;
 		float ambient = u_ambientIntensity;
 
-		vec3 color = u_lightColor * (sceneCol(hp) * (spec + ambient + diff));
+		vec3 red = vec3(1., 0., 0.);
+
+		vec3 color = u_lightColor * (red * (spec + ambient + diff));
 		gl_FragColor = vec4(color, 1); // color output
 	}
 }

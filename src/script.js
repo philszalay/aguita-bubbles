@@ -27,8 +27,6 @@ export default class ThreeJsDraft {
      */
     this.scene = new THREE.Scene()
 
-    this.resolution = 40
-
     this.mouseX = 0
     this.mouseY = 0
 
@@ -37,12 +35,8 @@ export default class ThreeJsDraft {
     /**
      * Camera
      */
-    this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 1000)
+    this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 10)
     this.camera.position.z = 1
-
-    this.clock = new THREE.Clock()
-
-    this.time = Date.now()
 
     /**
      * Renderer
@@ -148,8 +142,8 @@ export default class ThreeJsDraft {
 
     this.uniforms = {
       u_eps: { value: 0.001 },
-      u_maxDis: { value: 1000 },
-      u_maxSteps: { value: 1000 },
+      u_maxDis: { value: 2 },
+      u_maxSteps: { value: 50 },
 
       u_clearColor: { value: this.backgroundColor },
 
@@ -165,8 +159,6 @@ export default class ThreeJsDraft {
       u_ambientIntensity: { value: 0.15 },
       u_shininess: { value: 16 },
 
-      u_time: { value: 0 },
-
       u_sphereTexture: { value: this.sphereTexture },
       u_numSpheres: { value: this.sphereCoordinates.length }
     };
@@ -178,8 +170,10 @@ export default class ThreeJsDraft {
 
     this.scene.add(this.rayMarchPlane);
 
-    this.cameraForwardPos = new THREE.Vector3(0, 0, -1);
     this.VECTOR3ZERO = new THREE.Vector3(0, 0, 0);
+    this.cameraForwardPos = this.camera.position.clone().add(this.camera.getWorldDirection(this.VECTOR3ZERO).multiplyScalar(this.camera.near));
+
+    this.rayMarchPlane.position.copy(this.cameraForwardPos);
 
     /**
      * Animation Loop
@@ -227,25 +221,10 @@ export default class ThreeJsDraft {
       THREE.RGBAFormat,
       THREE.FloatType
     );
-
-    this.sphereTexture.needsUpdate = true;
-  }
-
-  calculateStrength(radius, subtract) {
-    // Calculate the strength based on the desired radius and subtract value
-    const strength = subtract * (radius * radius);
-    return strength;
   }
 
   animate() {
-    const delta = this.clock.getDelta()
-    this.time += delta * 0.5
-
-    this.cameraForwardPos = this.camera.position.clone().add(this.camera.getWorldDirection(this.VECTOR3ZERO).multiplyScalar(this.camera.near));
-    this.rayMarchPlane.position.copy(this.cameraForwardPos);
-    this.rayMarchPlane.rotation.copy(this.camera.rotation);
-
-    this.uniforms.u_time.value = (Date.now() - this.time) / 1000;
+    this.sphereTexture.needsUpdate = true;
 
     this.orbitControls.update()
     this.stats.update()
