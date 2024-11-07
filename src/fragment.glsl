@@ -34,18 +34,30 @@ float scene(vec3 p) {
 	float minDistance = u_maxDis;
 	for(int i = 0; i < u_numSpheres; i++) {
 		vec4 sphereData = texture(u_sphereTexture, vec2(float(i) / float(u_numSpheres - 1), 0.0));
+		// vec4 sphereData = vec4(0.0, 0.0, 0.0, 0.0);
+
 		vec3 spherePos = sphereData.xyz;
 		float sphereRadius = sphereData.w;
-		float distanceToSphere = distance(p, spherePos) - sphereRadius;
-		minDistance = smin(minDistance, distanceToSphere, 0.015);
 
-		// Early exit if close enough
-		if(minDistance < u_eps) {
-			return minDistance;
-		}
+		float distanceToSphere = distance(p, spherePos) - sphereRadius;
+		// float distanceToSphere = sqrt(distanceSquared(p, spherePos)) - sphereRadius;
+		// float distanceToSphere = approxLength(p - spherePos) - sphereRadius;
+
+		minDistance = smin(minDistance, distanceToSphere, 0.015);
 	}
 
 	return minDistance;
+}
+
+float approxLength(vec3 v) {
+    float ax = abs(v.x), ay = abs(v.y), az = abs(v.z);
+    float m = max(max(ax, ay), az);
+    return m + (ax + ay + az - m) * 0.5; // Approximation
+}
+
+float distanceSquared(vec3 a, vec3 b) {
+	vec3 diff = a - b;
+	return dot(diff, diff); // squared distance, avoiding sqrt
 }
 
 float rayMarch(vec3 ro, vec3 rd) {
@@ -100,6 +112,8 @@ void main() {
 
         // Get normal of hit point
 		vec3 n = normal(hp);
+
+		// vec3 n = vec3(0, 0, 0);
 
         // Calculate Diffuse model
 		float dotNL = dot(n, u_lightDir);
