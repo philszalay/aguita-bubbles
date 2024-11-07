@@ -6,8 +6,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import Vertex from './vertex.glsl'
 import Fragment from './fragment.glsl'
-import { createNoise2D } from 'simplex-noise'
 import logoCoordinates from './logoCoordinates.txt'
+import RAPIER from '@dimforge/rapier3d-compat';
 
 export default class ThreeJsDraft {
   constructor() {
@@ -19,8 +19,6 @@ export default class ThreeJsDraft {
     this.width = window.innerWidth
     this.height = window.innerHeight
     this.devicePixelRatio = window.devicePixelRatio
-
-    this.noise2D = createNoise2D()
 
     /**
      * Scene
@@ -55,6 +53,13 @@ export default class ThreeJsDraft {
      */
     this.orbitControls = new OrbitControls(this.camera, this.canvas)
     this.orbitControls.enabled = false
+
+    /**
+      * Rapier
+      */
+    this.initRapier()
+    this.numBodies = 10;
+    this.bodies = []
 
     /**
      * Resize
@@ -107,6 +112,12 @@ export default class ThreeJsDraft {
     this.loadingManager.onError = function (url) {
       console.log('There was an error loading ' + url)
     }
+  }
+
+  async initRapier() {
+    await RAPIER.init();
+    const gravity = { x: 0.0, y: 0, z: 0.0 };
+    this.world = new RAPIER.World(gravity);
 
     /**
      * Load Assets
@@ -141,7 +152,7 @@ export default class ThreeJsDraft {
     this.rayMarchPlane.scale.set(nearPlaneWidth, nearPlaneHeight, 1);
 
     this.uniforms = {
-      u_eps: { value: 0.001 },
+      u_eps: { value: 0.00001 },
       u_maxDis: { value: 2 },
       u_maxSteps: { value: 50 },
 
@@ -160,7 +171,7 @@ export default class ThreeJsDraft {
       u_shininess: { value: 16 },
 
       u_sphereTexture: { value: this.sphereTexture },
-      u_numSpheres: { value: this.sphereCoordinates.length }
+      u_numSpheres: { value: this.sphereCoordinates.length + this.numBodies }
     };
 
     // Set material properties
@@ -179,6 +190,78 @@ export default class ThreeJsDraft {
      * Animation Loop
      */
     this.animate()
+  }
+
+  addBalls() {
+    for (let i = 0; i < this.numBodies; i++) {
+      const body = this.getBall(RAPIER, this.world);
+      this.bodies.push(body);
+      // this.scene.add(body.mesh); // debug
+    }
+  }
+
+  getBall(RAPIER, world) {
+    const minSize = 0.04;
+    const maxSize = 0.02;
+    const size = minSize + Math.random() * (maxSize - minSize);
+    const density = 100;
+
+    // physics
+    const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
+      .setLinearDamping(2);
+
+    const rigid = world.createRigidBody(rigidBodyDesc);
+    const colliderDesc = RAPIER.ColliderDesc.ball(size).setDensity(density);
+    world.createCollider(colliderDesc, rigid);
+
+    // Ball geometry and material
+    const geometry = new THREE.IcosahedronGeometry(size, 1);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      flatShading: true
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+
+    const wireMat = new THREE.MeshBasicMaterial({
+      color: 0x990000,
+      wireframe: true
+    });
+
+    const wireMesh = new THREE.Mesh(geometry, wireMat);
+    wireMesh.scale.setScalar(1.01);
+    mesh.add(wireMesh);
+
+    function update(index) {
+      rigid.resetForces(true);
+
+      const { x, y, z } = rigid.translation();
+
+      // Set gravitation center to mouse position
+      const pos = new THREE.Vector3(x, y, z);
+
+      const dir = this.mousePosition.clone().sub(pos);
+
+      const distance = dir.length(); // Calculate the distance
+
+      // let falloff = index === 0 || index === 1 || index === 2 ? 1 : 3 * Math.exp(-distance);
+
+      let falloff = index === 0 || index === 1 || index === 2 ? 1 : 1 * Math.exp(-distance * 0.5);
+
+      if (falloff < 0.05) {
+        falloff = 0;
+      }
+
+      // Apply force based on direction and falloff (scaled force)
+      const force = dir.normalize().multiplyScalar(falloff * 0.05); // Adjust the base force as needed
+      rigid.addForce(force, true); // Apply the force at the center of the body
+
+      mesh.position.set(x, y, z);
+
+      return { pos, size };
+    }
+
+    return { mesh, rigid, update: update.bind(this) };
   }
 
   loadAssets() {
@@ -201,22 +284,24 @@ export default class ThreeJsDraft {
   }
 
   createSphereTexture() {
+    this.addBalls();
+
     this.sphereCoordinates = logoCoordinates.split('\n').filter(line => line.trim() !== '');
 
-    const sphereData = new Float32Array(this.sphereCoordinates.length * 4);
+    this.sphereData = new Float32Array(this.sphereCoordinates.length * 4 + this.numBodies * 4); // reserve for balls
 
     this.sphereCoordinates.forEach((line, index) => {
       const values = line.split(',').map(Number);
 
-      sphereData[index * 4] = values[1];
-      sphereData[index * 4 + 1] = values[2];
-      sphereData[index * 4 + 2] = values[3];
-      sphereData[index * 4 + 3] = values[0];
+      this.sphereData[index * 4] = values[1];
+      this.sphereData[index * 4 + 1] = values[2];
+      this.sphereData[index * 4 + 2] = 0;
+      this.sphereData[index * 4 + 3] = values[0];
     });
 
     this.sphereTexture = new THREE.DataTexture(
-      sphereData,
-      this.sphereCoordinates.length, // width (number of spheres)
+      this.sphereData,
+      this.sphereCoordinates.length + this.numBodies, // width (number of spheres)
       1, // height
       THREE.RGBAFormat,
       THREE.FloatType
@@ -224,6 +309,17 @@ export default class ThreeJsDraft {
   }
 
   animate() {
+    this.world.step();
+
+    // Update texture with current balls position
+    this.bodies.forEach((body, index) => {
+      const { pos, size } = body.update(index);
+      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 4] = pos.x;
+      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 3] = pos.y;
+      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 2] = 0.02;
+      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 1] = size;
+    });
+
     this.sphereTexture.needsUpdate = true;
 
     this.orbitControls.update()

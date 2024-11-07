@@ -43,7 +43,7 @@ float scene(vec3 p) {
 		// float distanceToSphere = sqrt(distanceSquared(p, spherePos)) - sphereRadius;
 		// float distanceToSphere = approxLength(p - spherePos) - sphereRadius;
 
-		minDistance = smin(minDistance, distanceToSphere, 0.015);
+		minDistance = smin(minDistance, distanceToSphere, 0.02);
 	}
 
 	return minDistance;
