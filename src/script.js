@@ -8,6 +8,7 @@ import Vertex from './vertex.glsl'
 import Fragment from './fragment.glsl'
 import logoCoordinates from './logoCoordinates.txt'
 import RAPIER from '@dimforge/rapier3d-compat';
+import { GUI } from 'dat.gui'
 
 export default class ThreeJsDraft {
   constructor() {
@@ -43,7 +44,7 @@ export default class ThreeJsDraft {
       canvas: this.canvas
     })
     this.renderer.setSize(this.width, this.height)
-    this.renderer.setPixelRatio(Math.min(this.devicePixelRatio, 2))
+    // this.renderer.setPixelRatio(Math.min(this.devicePixelRatio, 2))
 
     this.backgroundColor = new THREE.Color(0x3399ee);
     this.renderer.setClearColor(this.backgroundColor, 1);
@@ -61,6 +62,11 @@ export default class ThreeJsDraft {
     this.numBodies = 10;
     this.bodies = []
 
+    this.radiusValues = {
+      textSpheresRadius: { value: 0.025 },
+      ballSpheresRadius: { value: 0.2 }
+    }
+
     /**
      * Resize
      */
@@ -73,7 +79,7 @@ export default class ThreeJsDraft {
       this.devicePixelRatio = window.devicePixelRatio
 
       this.renderer.setSize(this.width, this.height)
-      this.renderer.setPixelRatio(Math.min(this.devicePixelRatio, 2))
+      // this.renderer.setPixelRatio(Math.min(this.devicePixelRatio, 2))
     }, false)
 
     document.addEventListener('mousemove', (event) => {
@@ -152,9 +158,9 @@ export default class ThreeJsDraft {
     this.rayMarchPlane.scale.set(nearPlaneWidth, nearPlaneHeight, 1);
 
     this.uniforms = {
-      u_eps: { value: 0.00001 },
+      u_eps: { value: 0.001 },
       u_maxDis: { value: 2 },
-      u_maxSteps: { value: 50 },
+      u_maxSteps: { value: 500 },
 
       u_clearColor: { value: this.backgroundColor },
 
@@ -169,6 +175,8 @@ export default class ThreeJsDraft {
       u_specIntensity: { value: 3 },
       u_ambientIntensity: { value: 0.15 },
       u_shininess: { value: 16 },
+
+      u_sphereKValues: { value: this.sphereKValues },
 
       u_sphereTexture: { value: this.sphereTexture },
       u_numSpheres: { value: this.sphereCoordinates.length + this.numBodies }
@@ -201,10 +209,10 @@ export default class ThreeJsDraft {
   }
 
   getBall(RAPIER, world) {
-    const minSize = 0.04;
-    const maxSize = 0.02;
+    const minSize = 0.01;
+    const maxSize = 0.01;
     const size = minSize + Math.random() * (maxSize - minSize);
-    const density = 100;
+    const density = 3000;
 
     // physics
     const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
@@ -279,12 +287,30 @@ export default class ThreeJsDraft {
     const axisHelper = new THREE.AxesHelper(3)
     this.scene.add(axisHelper)
 
+    // use dat ui
+    const gui = new GUI()
+
+    const onChange = () => {
+      for (let i = 0; i < this.sphereCoordinates.length; i++) {
+        this.sphereKValues[i] = this.radiusValues.textSpheresRadius.value;
+      }
+
+      for (let i = 0; i < this.bodies.length; i++) {
+        this.sphereKValues[i + this.sphereCoordinates.length] = this.radiusValues.ballSpheresRadius.value;
+      }
+    }
+
+    gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('text_spheres_radius').onChange(onChange)
+    gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('ball_spheres_radius').onChange(onChange)
+
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)
   }
 
   createSphereTexture() {
     this.addBalls();
+
+    this.sphereKValues = [];
 
     this.sphereCoordinates = logoCoordinates.split('\n').filter(line => line.trim() !== '');
 
@@ -295,8 +321,14 @@ export default class ThreeJsDraft {
 
       this.sphereData[index * 4] = values[1];
       this.sphereData[index * 4 + 1] = values[2];
-      this.sphereData[index * 4 + 2] = 0;
+      this.sphereData[index * 4 + 2] = values[3];
       this.sphereData[index * 4 + 3] = values[0];
+
+      this.sphereKValues.push(this.radiusValues.textSpheresRadius.value);
+    });
+
+    this.bodies.forEach(() => {
+      this.sphereKValues.push(this.radiusValues.ballSpheresRadius.value);
     });
 
     this.sphereTexture = new THREE.DataTexture(
@@ -316,7 +348,7 @@ export default class ThreeJsDraft {
       const { pos, size } = body.update(index);
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 4] = pos.x;
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 3] = pos.y;
-      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 2] = 0.02;
+      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 2] = pos.z;
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 1] = size;
     });
 

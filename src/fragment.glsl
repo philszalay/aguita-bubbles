@@ -23,7 +23,8 @@ uniform float u_ambientIntensity;
 uniform float u_shininess;
 
 uniform sampler2D u_sphereTexture;
-uniform int u_numSpheres;
+uniform int  u_numSpheres;
+uniform float u_sphereKValues[158];
 
 float smin(float a, float b, float k) {
 	float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
@@ -43,16 +44,18 @@ float scene(vec3 p) {
 		// float distanceToSphere = sqrt(distanceSquared(p, spherePos)) - sphereRadius;
 		// float distanceToSphere = approxLength(p - spherePos) - sphereRadius;
 
-		minDistance = smin(minDistance, distanceToSphere, 0.02);
+		float k = u_sphereKValues[i];
+
+		minDistance = smin(minDistance, distanceToSphere, k);
 	}
 
 	return minDistance;
 }
 
 float approxLength(vec3 v) {
-    float ax = abs(v.x), ay = abs(v.y), az = abs(v.z);
-    float m = max(max(ax, ay), az);
-    return m + (ax + ay + az - m) * 0.5; // Approximation
+	float ax = abs(v.x), ay = abs(v.y), az = abs(v.z);
+	float m = max(max(ax, ay), az);
+	return m + (ax + ay + az - m) * 0.5; // Approximation
 }
 
 float distanceSquared(vec3 a, vec3 b) {
