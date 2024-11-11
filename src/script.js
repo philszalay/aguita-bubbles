@@ -9,6 +9,8 @@ import Fragment from './fragment.glsl'
 import logoCoordinates from './logoCoordinates.txt'
 import RAPIER from '@dimforge/rapier3d-compat';
 import { GUI } from 'dat.gui'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import main from '../assets/hdri/main.hdr';
 
 export default class ThreeJsDraft {
   constructor() {
@@ -45,6 +47,10 @@ export default class ThreeJsDraft {
     })
     this.renderer.setSize(this.width, this.height)
     // this.renderer.setPixelRatio(Math.min(this.devicePixelRatio, 2))
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.outputEncoding = THREE.sRGBEncoding;
+    this.renderer.physicallyCorrectLights = true;
 
     this.backgroundColor = new THREE.Color(0x3399ee);
     this.renderer.setClearColor(this.backgroundColor, 1);
@@ -64,7 +70,10 @@ export default class ThreeJsDraft {
 
     this.radiusValues = {
       textSpheresRadius: { value: 0.025 },
-      ballSpheresRadius: { value: 0.2 }
+      ballSpheresRadius: { value: 0.1 },
+      lightPositionX: { value: 0 },
+      lightPositionY: { value: 0 },
+      lightPositionZ: { value: 1.6 }
     }
 
     /**
@@ -129,75 +138,6 @@ export default class ThreeJsDraft {
      * Load Assets
      */
     this.loadAssets()
-
-    /**
-     * Helpers
-     */
-    this.addHelpers()
-
-    /**
-     * Objects
-     */
-    this.createSphereTexture()
-
-    /**
-     * Lights
-     */
-    this.addLight()
-
-    // Create a ray marching plane
-    const geometry = new THREE.PlaneGeometry();
-    this.material = new THREE.ShaderMaterial();
-    this.rayMarchPlane = new THREE.Mesh(geometry, this.material);
-
-    // Get the wdith and height of the near plane
-    const nearPlaneWidth = this.camera.near * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect * 2;
-    const nearPlaneHeight = nearPlaneWidth / this.camera.aspect;
-
-    // Scale the ray marching plane
-    this.rayMarchPlane.scale.set(nearPlaneWidth, nearPlaneHeight, 1);
-
-    this.uniforms = {
-      u_eps: { value: 0.001 },
-      u_maxDis: { value: 2 },
-      u_maxSteps: { value: 500 },
-
-      u_clearColor: { value: this.backgroundColor },
-
-      u_camPos: { value: this.camera.position },
-      u_camToWorldMat: { value: this.camera.matrixWorld },
-      u_camInvProjMat: { value: this.camera.projectionMatrixInverse },
-
-      u_lightDir: { value: this.light.position },
-      u_lightColor: { value: this.light.color },
-
-      u_diffIntensity: { value: 0.5 },
-      u_specIntensity: { value: 3 },
-      u_ambientIntensity: { value: 0.15 },
-      u_shininess: { value: 16 },
-
-      u_sphereKValues: { value: this.sphereKValues },
-
-      u_sphereTexture: { value: this.sphereTexture },
-      u_numSpheres: { value: this.sphereCoordinates.length + this.numBodies }
-    };
-
-    // Set material properties
-    this.material.uniforms = this.uniforms;
-    this.material.vertexShader = Vertex;
-    this.material.fragmentShader = Fragment;
-
-    this.scene.add(this.rayMarchPlane);
-
-    this.VECTOR3ZERO = new THREE.Vector3(0, 0, 0);
-    this.cameraForwardPos = this.camera.position.clone().add(this.camera.getWorldDirection(this.VECTOR3ZERO).multiplyScalar(this.camera.near));
-
-    this.rayMarchPlane.position.copy(this.cameraForwardPos);
-
-    /**
-     * Animation Loop
-     */
-    this.animate()
   }
 
   addBalls() {
@@ -273,13 +213,99 @@ export default class ThreeJsDraft {
   }
 
   loadAssets() {
-    // const textureLoader = new THREE.TextureLoader(this.loadingManager)
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    pmremGenerator.compileEquirectangularShader();
+
+    new RGBELoader(this.loadingManager)
+      .setDataType(THREE.FloatType)
+      .load(main, (hdrEquirect) => {
+        // Apply environment map to the scene for lighting and reflections
+        hdrEquirect.mapping = THREE.EquirectangularReflectionMapping;
+        this.scene.environment = hdrEquirect; // Set HDRI as environment map
+        this.scene.background = hdrEquirect; // Optional: Set HDRI as background
+
+        /**
+ * Objects
+ */
+        this.createSphereTexture()
+
+        /**
+ * Helpers
+ */
+        this.addHelpers()
+
+        /**
+         * Lights
+         */
+        this.addLight()
+
+        // Create a ray marching plane
+        const geometry = new THREE.PlaneGeometry();
+        this.material = new THREE.ShaderMaterial();
+        this.rayMarchPlane = new THREE.Mesh(geometry, this.material);
+
+        // Get the wdith and height of the near plane
+        const nearPlaneWidth = this.camera.near * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect * 2;
+        const nearPlaneHeight = nearPlaneWidth / this.camera.aspect;
+
+        // Scale the ray marching plane
+        this.rayMarchPlane.scale.set(nearPlaneWidth, nearPlaneHeight, 1);
+
+        this.uniforms = {
+          u_eps: { value: 0.001 },
+          u_maxDis: { value: 2 },
+          u_maxSteps: { value: 500 },
+
+          u_envMap: { value: hdrEquirect },
+
+          u_clearColor: { value: this.backgroundColor },
+
+          u_camPos: { value: this.camera.position },
+          u_camToWorldMat: { value: this.camera.matrixWorld },
+          u_camInvProjMat: { value: this.camera.projectionMatrixInverse },
+
+          u_lightDir: { value: this.light.position },
+          u_lightColor: { value: this.light.color },
+
+          u_diffIntensity: { value: 0 },
+          u_specIntensity: { value: 1 },
+          u_ambientIntensity: { value: 0.07 },
+          u_shininess: { value: 64 },
+
+          u_sphereKValues: { value: this.sphereKValues },
+
+          u_transparency: { value: 0.3 },
+          u_refractiveIndex: { value: 1.1 },
+
+          u_sphereTexture: { value: this.sphereTexture },
+          u_numSpheres: { value: this.sphereCoordinates.length + this.numBodies }
+        };
+
+        // Set material properties
+        this.material.uniforms = this.uniforms;
+        this.material.vertexShader = Vertex;
+        this.material.fragmentShader = Fragment;
+
+        this.scene.add(this.rayMarchPlane);
+
+        this.VECTOR3ZERO = new THREE.Vector3(0, 0, 0);
+        this.cameraForwardPos = this.camera.position.clone().add(this.camera.getWorldDirection(this.VECTOR3ZERO).multiplyScalar(this.camera.near));
+
+        this.rayMarchPlane.position.copy(this.cameraForwardPos);
+
+        console.log(this.uniforms.u_envMap);
+
+        /**
+         * Animation Loop
+         */
+        this.animate()
+      });
   }
 
   addLight() {
     // add ambient light
     this.light = new THREE.DirectionalLight(0xffffff, 1);
-    this.light.position.set(1, 1, 1);
+    this.light.position.set(this.radiusValues.lightPositionX.value, this.radiusValues.lightPositionY.value, this.radiusValues.lightPositionZ.value);
     this.scene.add(this.light);
   }
 
@@ -302,6 +328,15 @@ export default class ThreeJsDraft {
 
     gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('text_spheres_radius').onChange(onChange)
     gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('ball_spheres_radius').onChange(onChange)
+    gui.add(this.radiusValues.lightPositionX, 'value', -5, 5).step(0.1).name('light_x').onChange((value) => {
+      this.light.position.x = value;
+    })
+    gui.add(this.radiusValues.lightPositionY, 'value', -5, 5).step(0.1).name('light_y').onChange((value) => {
+      this.light.position.y = value;
+    })
+    gui.add(this.radiusValues.lightPositionZ, 'value', -5, 5).step(0.1).name('light_z').onChange((value) => {
+      this.light.position.z = value;
+    })
 
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)
@@ -321,7 +356,7 @@ export default class ThreeJsDraft {
 
       this.sphereData[index * 4] = values[1];
       this.sphereData[index * 4 + 1] = values[2];
-      this.sphereData[index * 4 + 2] = values[3];
+      this.sphereData[index * 4 + 2] = 0;
       this.sphereData[index * 4 + 3] = values[0];
 
       this.sphereKValues.push(this.radiusValues.textSpheresRadius.value);
@@ -348,7 +383,7 @@ export default class ThreeJsDraft {
       const { pos, size } = body.update(index);
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 4] = pos.x;
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 3] = pos.y;
-      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 2] = pos.z;
+      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 2] = 0;
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 1] = size;
     });
 
