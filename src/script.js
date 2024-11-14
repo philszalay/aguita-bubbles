@@ -24,6 +24,8 @@ export default class ThreeJsDraft {
     this.height = window.innerHeight
     this.devicePixelRatio = window.devicePixelRatio
 
+    this.debug = true
+
     /**
      * Scene
      */
@@ -66,8 +68,9 @@ export default class ThreeJsDraft {
       * Rapier
       */
     this.initRapier()
-    this.numBodies = 10;
-    this.bodies = []
+    this.numBalls = 10;
+    this.balls = []
+    this.textBalls = []
 
     this.radiusValues = {
       textSpheresRadius: { value: 0.025 },
@@ -141,17 +144,74 @@ export default class ThreeJsDraft {
     this.loadAssets()
   }
 
-  addBalls() {
-    for (let i = 0; i < this.numBodies; i++) {
-      const body = this.getBall(RAPIER, this.world);
-      this.bodies.push(body);
-      // this.scene.add(body.mesh); // debug
+  getTextBall(gravitationCenter, radius) {
+    // Adjust density inversely proportional to radius
+    const density = radius;
+
+    // Adjust damping based on radius (smaller balls have less damping)
+    const damping = radius * 1000000;
+
+    const initialPosition = gravitationCenter;
+
+    const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
+      .setLinearDamping(damping)
+      .setTranslation(initialPosition.x, initialPosition.y, initialPosition.z)
+      .setLinvel(0, 0, 0); // Set initial linear velocity to zero
+
+    const rigid = this.world.createRigidBody(rigidBodyDesc);
+
+    const colliderDesc = RAPIER.ColliderDesc.ball(radius)
+      .setDensity(density)
+      .setCollisionGroups(0b01 | (0b10 << 16));
+
+    this.world.createCollider(colliderDesc, rigid);
+
+    // Ball geometry and material
+    const geometry = new THREE.IcosahedronGeometry(radius, 1);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      flatShading: true
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+
+    const wireMat = new THREE.MeshBasicMaterial({
+      color: 0x990000,
+      wireframe: true
+    });
+
+    const wireMesh = new THREE.Mesh(geometry, wireMat);
+
+    wireMesh.scale.setScalar(1.01);
+    mesh.add(wireMesh);
+
+    function update() {
+      rigid.resetForces(true);
+
+      const { x, y, z } = rigid.translation();
+
+      const pos = new THREE.Vector3(x, y, z);
+
+      const dir = gravitationCenter.clone().sub(pos);
+
+      const baseForceMagnitude = 0.0001;
+
+      const forceMagnitude = baseForceMagnitude * radius;
+
+      const force = dir.normalize().multiplyScalar(forceMagnitude);
+      rigid.addForce(force, true);
+
+      mesh.position.set(x, y, z);
+
+      return { pos, radius };
     }
+
+    return { mesh, rigid, update: update.bind(this) };
   }
 
-  getBall(RAPIER, world) {
-    const minSize = 0.01;
-    const maxSize = 0.01;
+  getBall() {
+    const minSize = 0.05;
+    const maxSize = 0.05;
     const size = minSize + Math.random() * (maxSize - minSize);
     const density = 2000;
 
@@ -159,9 +219,13 @@ export default class ThreeJsDraft {
     const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setLinearDamping(5);
 
-    const rigid = world.createRigidBody(rigidBodyDesc);
-    const colliderDesc = RAPIER.ColliderDesc.ball(size).setDensity(density);
-    world.createCollider(colliderDesc, rigid);
+    const rigid = this.world.createRigidBody(rigidBodyDesc);
+
+    const colliderDesc = RAPIER.ColliderDesc.ball(size)
+      .setDensity(density)
+      .setCollisionGroups(0b10 | ((0b01 | 0b10) << 16)); // Group 0b10, collides with 0b01 and 0b10
+
+    this.world.createCollider(colliderDesc, rigid);
 
     // Ball geometry and material
     const geometry = new THREE.IcosahedronGeometry(size, 1);
@@ -202,7 +266,7 @@ export default class ThreeJsDraft {
       }
 
       // Apply force based on direction and falloff (scaled force)
-      const force = dir.normalize().multiplyScalar(falloff * 0.05); // Adjust the base force as needed
+      const force = dir.normalize().multiplyScalar(falloff * 10); // Adjust the base force as needed
       rigid.addForce(force, true); // Apply the force at the center of the body
 
       mesh.position.set(x, y, z);
@@ -271,11 +335,11 @@ export default class ThreeJsDraft {
 
           u_backgroundTexture: { value: this.bgTexture },
 
-          u_transparency: { value: 0.6 },
+          u_transparency: { value: 0.2 },
           u_refractiveIndex: { value: 1 },
 
           u_sphereTexture: { value: this.sphereTexture },
-          u_numSpheres: { value: this.sphereCoordinates.length + this.numBodies }
+          u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls }
         };
 
         // Set material properties
@@ -283,14 +347,14 @@ export default class ThreeJsDraft {
         this.material.vertexShader = Vertex;
         this.material.fragmentShader = Fragment;
 
-        this.scene.add(this.rayMarchPlane);
+        if (this.debug) {
+          this.scene.add(this.rayMarchPlane);
+        }
 
         this.VECTOR3ZERO = new THREE.Vector3(0, 0, 0);
         this.cameraForwardPos = this.camera.position.clone().add(this.camera.getWorldDirection(this.VECTOR3ZERO).multiplyScalar(this.camera.near));
 
         this.rayMarchPlane.position.copy(this.cameraForwardPos);
-
-        console.log(this.uniforms.u_envMap);
 
         /**
          * Animation Loop
@@ -318,7 +382,7 @@ export default class ThreeJsDraft {
         this.sphereKValues[i] = this.radiusValues.textSpheresRadius.value;
       }
 
-      for (let i = 0; i < this.bodies.length; i++) {
+      for (let i = 0; i < this.balls.length; i++) {
         this.sphereKValues[i + this.sphereCoordinates.length] = this.radiusValues.ballSpheresRadius.value;
       }
     }
@@ -340,32 +404,36 @@ export default class ThreeJsDraft {
   }
 
   createSphereTexture() {
-    this.addBalls();
-
     this.sphereKValues = [];
-
     this.sphereCoordinates = logoCoordinates.split('\n').filter(line => line.trim() !== '');
+    this.sphereData = new Float32Array(this.sphereCoordinates.length * 4 + this.numBalls * 4); // reserve for balls
 
-    this.sphereData = new Float32Array(this.sphereCoordinates.length * 4 + this.numBodies * 4); // reserve for balls
-
-    this.sphereCoordinates.forEach((line, index) => {
+    this.sphereCoordinates.forEach((line) => {
       const values = line.split(',').map(Number);
+      const textBall = this.getTextBall(new THREE.Vector3(values[1], values[2], values[3]), values[0])
 
-      this.sphereData[index * 4] = values[1];
-      this.sphereData[index * 4 + 1] = values[2];
-      this.sphereData[index * 4 + 2] = 0;
-      this.sphereData[index * 4 + 3] = values[0];
+      if (!this.debug) {
+        this.scene.add(textBall.mesh);
+      }
 
+      this.textBalls.push(textBall);
       this.sphereKValues.push(this.radiusValues.textSpheresRadius.value);
     });
 
-    this.bodies.forEach(() => {
+    for (let i = 0; i < this.numBalls; i++) {
+      const body = this.getBall();
+      this.balls.push(body);
+
+      if (!this.debug) {
+        this.scene.add(body.mesh);
+      }
+
       this.sphereKValues.push(this.radiusValues.ballSpheresRadius.value);
-    });
+    };
 
     this.sphereTexture = new THREE.DataTexture(
       this.sphereData,
-      this.sphereCoordinates.length + this.numBodies, // width (number of spheres)
+      this.sphereCoordinates.length + this.numBalls, // width (number of spheres)
       1, // height
       THREE.RGBAFormat,
       THREE.FloatType
@@ -376,12 +444,20 @@ export default class ThreeJsDraft {
     this.world.step();
 
     // Update texture with current balls position
-    this.bodies.forEach((body, index) => {
-      const { pos, size } = body.update(index);
+    this.balls.forEach((ball, index) => {
+      const { pos, size } = ball.update(index);
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 4] = pos.x;
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 3] = pos.y;
-      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 2] = 0;
+      this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 2] = pos.z;
       this.sphereTexture.source.data.data[this.sphereTexture.source.data.data.length - (4 * index) - 1] = size;
+    });
+
+    this.textBalls.forEach((ball, index) => {
+      const { pos, radius } = ball.update(index);
+      this.sphereTexture.source.data.data[4 * index] = pos.x;
+      this.sphereTexture.source.data.data[4 * index + 1] = pos.y;
+      this.sphereTexture.source.data.data[4 * index + 2] = pos.z;
+      this.sphereTexture.source.data.data[4 * index + 3] = radius;
     });
 
     this.sphereTexture.needsUpdate = true;

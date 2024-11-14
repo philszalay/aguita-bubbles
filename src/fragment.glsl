@@ -89,6 +89,7 @@ void main() {
 
 		// Sample background image with distortion
 		vec2 distortedUV = uv + distortion;
+		
 		vec3 backgroundColor = texture(u_backgroundTexture, distortedUV).rgb;
 
 		vec3 refractColor = texture(u_envMap, refractDir.xy * 0.5 + 0.5).rgb;
