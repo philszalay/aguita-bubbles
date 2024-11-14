@@ -11,6 +11,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { GUI } from 'dat.gui'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import main from '../assets/hdri/main.hdr';
+import background from '../assets/images/background.png';
 
 export default class ThreeJsDraft {
   constructor() {
@@ -152,11 +153,11 @@ export default class ThreeJsDraft {
     const minSize = 0.01;
     const maxSize = 0.01;
     const size = minSize + Math.random() * (maxSize - minSize);
-    const density = 3000;
+    const density = 2000;
 
     // physics
     const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
-      .setLinearDamping(2);
+      .setLinearDamping(5);
 
     const rigid = world.createRigidBody(rigidBodyDesc);
     const colliderDesc = RAPIER.ColliderDesc.ball(size).setDensity(density);
@@ -224,6 +225,8 @@ export default class ThreeJsDraft {
         this.scene.environment = hdrEquirect; // Set HDRI as environment map
         this.scene.background = hdrEquirect; // Optional: Set HDRI as background
 
+        this.bgTexture = new THREE.TextureLoader().load(background);
+
         /**
  * Objects
  */
@@ -242,7 +245,7 @@ export default class ThreeJsDraft {
         // Create a ray marching plane
         const geometry = new THREE.PlaneGeometry();
         this.material = new THREE.ShaderMaterial();
-        this.rayMarchPlane = new THREE.Mesh(geometry, this.material);
+        this.rayMarchPlane = new THREE.Mesh(geometry, this.material)
 
         // Get the wdith and height of the near plane
         const nearPlaneWidth = this.camera.near * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect * 2;
@@ -258,24 +261,18 @@ export default class ThreeJsDraft {
 
           u_envMap: { value: hdrEquirect },
 
-          u_clearColor: { value: this.backgroundColor },
-
           u_camPos: { value: this.camera.position },
           u_camToWorldMat: { value: this.camera.matrixWorld },
           u_camInvProjMat: { value: this.camera.projectionMatrixInverse },
 
-          u_lightDir: { value: this.light.position },
-          u_lightColor: { value: this.light.color },
-
-          u_diffIntensity: { value: 0 },
-          u_specIntensity: { value: 1 },
-          u_ambientIntensity: { value: 0.07 },
-          u_shininess: { value: 64 },
+          u_shininess: { value: 0.5 },
 
           u_sphereKValues: { value: this.sphereKValues },
 
-          u_transparency: { value: 0.3 },
-          u_refractiveIndex: { value: 1.1 },
+          u_backgroundTexture: { value: this.bgTexture },
+
+          u_transparency: { value: 0.6 },
+          u_refractiveIndex: { value: 1 },
 
           u_sphereTexture: { value: this.sphereTexture },
           u_numSpheres: { value: this.sphereCoordinates.length + this.numBodies }
@@ -304,9 +301,9 @@ export default class ThreeJsDraft {
 
   addLight() {
     // add ambient light
-    this.light = new THREE.DirectionalLight(0xffffff, 1);
-    this.light.position.set(this.radiusValues.lightPositionX.value, this.radiusValues.lightPositionY.value, this.radiusValues.lightPositionZ.value);
-    this.scene.add(this.light);
+    // this.light = new THREE.DirectionalLight('red', 1);
+    // this.light.position.set(this.radiusValues.lightPositionX.value, this.radiusValues.lightPositionY.value, this.radiusValues.lightPositionZ.value);
+    // this.scene.add(this.light);
   }
 
   addHelpers() {
