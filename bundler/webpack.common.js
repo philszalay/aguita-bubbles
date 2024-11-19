@@ -60,7 +60,7 @@ module.exports = (env, argv) => {
 
           // Images
           {
-            test: /\.(jpg|png|gif|svg|gltf|bin|ico|hdr)$/,
+            test: /\.(jpg|png|jpeg|gif|svg|gltf|bin|ico|hdr)$/,
             use:
               [
                 {

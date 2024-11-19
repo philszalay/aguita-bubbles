@@ -23,6 +23,8 @@ uniform float u_refractiveIndex;
 
 uniform sampler2D u_envMap;
 
+uniform vec3 u_mainColor;
+
 // Smooth minimum function
 float smin(float a, float b, float k) {
 	float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
@@ -84,18 +86,16 @@ void main() {
 
 		vec2 distortion = refractDir.xy * (1.0 - u_transparency) * 0.02; // Adjust the 0.1 to control distortion strength
 
-        // Sample HDRI for reflection and refraction colors
-		vec3 reflectColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
-
 		// Sample background image with distortion
 		vec2 distortedUV = uv + distortion;
-		
 		vec3 backgroundColor = texture(u_backgroundTexture, distortedUV).rgb;
 
+        // Sample HDRI for reflection and refraction colors
+		vec3 reflectColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
 		vec3 refractColor = texture(u_envMap, refractDir.xy * 0.5 + 0.5).rgb;
 
         // Mix reflection and refraction colors
-		vec3 glassColor = mix(backgroundColor, reflectColor, 0.8);
+		vec3 glassColor = mix(refractColor, reflectColor, 0.8);
 
         // Sample background image
 
@@ -105,6 +105,8 @@ void main() {
 		vec3 finalColor = mix(glassColor, backgroundColor, u_transparency);
 
         // Set final color with full opacity
+		finalColor.b += 0.6;
+		finalColor.r += 0.4;
 		gl_FragColor = vec4(finalColor, 1.0);
 	}
 }

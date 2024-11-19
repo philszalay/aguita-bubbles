@@ -40,7 +40,7 @@ export default class ThreeJsDraft {
      * Camera
      */
     this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 10)
-    this.camera.position.z = 1
+    this.camera.position.z = 0.75
 
     /**
      * Renderer
@@ -210,14 +210,17 @@ export default class ThreeJsDraft {
   }
 
   getBall() {
-    const minSize = 0.05;
+    const minSize = 0.03;
     const maxSize = 0.05;
     const size = minSize + Math.random() * (maxSize - minSize);
-    const density = 2000;
+
+    const baseDamping = 5;
+    const baseForce = 0.005;
+
+    const density = size;
 
     // physics
-    const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
-      .setLinearDamping(5);
+    const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
 
     const rigid = this.world.createRigidBody(rigidBodyDesc);
 
@@ -259,14 +262,25 @@ export default class ThreeJsDraft {
 
       // let falloff = index === 0 || index === 1 || index === 2 ? 1 : 3 * Math.exp(-distance);
 
-      let falloff = index === 0 || index === 1 || index === 2 ? 1 : 1 * Math.exp(-distance * 0.5);
+      // let falloff = index === 0 || index === 1 || index === 2 ? 1 : 1 * Math.exp(-distance * 0.5);
 
-      if (falloff < 0.05) {
-        falloff = 0;
+      let gravitationFieldFactor;
+
+      gravitationFieldFactor = Math.exp(-distance);
+
+      if (gravitationFieldFactor < 0.05) {
+        gravitationFieldFactor = 0;
       }
 
+      const forceValue = gravitationFieldFactor * baseForce * size
+
+      // const dampingFactor = 1 / distance; // Increase damping as the distance decreases
+      // console.log(dampingFactor);
+
+      rigid.setLinearDamping(baseDamping);
+
       // Apply force based on direction and falloff (scaled force)
-      const force = dir.normalize().multiplyScalar(falloff * 10); // Adjust the base force as needed
+      const force = dir.normalize().multiplyScalar(forceValue); // Adjust the base force as needed
       rigid.addForce(force, true); // Apply the force at the center of the body
 
       mesh.position.set(x, y, z);
@@ -334,6 +348,7 @@ export default class ThreeJsDraft {
           u_sphereKValues: { value: this.sphereKValues },
 
           u_backgroundTexture: { value: this.bgTexture },
+          u_mainColor: { value: new THREE.Color(0x3a70c7) },
 
           u_transparency: { value: 0.2 },
           u_refractiveIndex: { value: 1 },
@@ -441,6 +456,10 @@ export default class ThreeJsDraft {
   }
 
   animate() {
+    setTimeout(() => {
+      window.requestAnimationFrame(this.animate.bind(this));
+    }, 1000 / 60);
+
     this.world.step();
 
     // Update texture with current balls position
@@ -465,7 +484,6 @@ export default class ThreeJsDraft {
     this.orbitControls.update()
     this.stats.update()
     this.renderer.render(this.scene, this.camera)
-    window.requestAnimationFrame(this.animate.bind(this))
   }
 }
 
