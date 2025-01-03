@@ -19,6 +19,10 @@ uniform vec3 u_mainColor;
 uniform float u_reflectionFactor;
 uniform float u_transparency;
 uniform float u_roughness;
+uniform float u_saturation;
+uniform float u_ambientOcclusionAttenuation;
+
+#define PI 3.14159265359
 
 // Smooth minimum function
 float smin(float a, float b, float k) {
@@ -62,7 +66,7 @@ float ambientOcclusion(vec3 p, vec3 n) {
 		float h = 0.01 + 0.12 * float(i) / 4.0;
 		float d = scene(p + h * n);
 		occ += (h - d) * sca;
-		sca *= 0.95;
+		sca *= u_ambientOcclusionAttenuation;
 	}
 	return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
 }
@@ -71,6 +75,21 @@ float ambientOcclusion(vec3 p, vec3 n) {
 vec3 normal(vec3 p) {
 	vec3 e = vec3(u_eps, 0.0, 0.0);
 	return normalize(vec3(scene(p + e.xyy) - scene(p - e.xyy), scene(p + e.yxy) - scene(p - e.yxy), scene(p + e.yyx) - scene(p - e.yyx)));
+}
+
+float fresnel(float cosTheta, float F0) {
+	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+vec3 sampleEnvMap(vec3 reflectDir, float roughness) {
+	float lod = roughness; // Adjust this multiplier to control roughness effect
+	return textureLod(u_envMap, reflectDir.xy * 0.5 + 0.5, lod).rgb;
+}
+
+// Sättigungsfunktion
+vec3 adjustSaturation(vec3 color, float saturation) {
+    float luminance = dot(color, vec3(0.299, 0.587, 0.114));
+    return mix(vec3(luminance), color, saturation);
 }
 
 void main() {
@@ -97,24 +116,28 @@ void main() {
 		vec3 hitPos = ro + dist * rd;
 		vec3 n = normal(hitPos);
 
-        // Calculate ambient occlusion
-		float ao = ambientOcclusion(hitPos, n);
-
-        // Reflection and refraction
+        // Calculate reflection direction
 		vec3 reflectDir = reflect(rd, n);
 
-        // Sample HDRI for reflection and refraction colors
-		vec3 reflectColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
+        // Calculate Fresnel factor
+		float F0 = 1. - u_roughness; // High value for metallic surfaces like silver
+		float fresnelFactor = fresnel(max(dot(-rd, n), 0.0), F0);
 
-        // Darken the main color based on transparency
-		vec3 darkenedMainColor = u_mainColor * (1.0 - u_transparency * 0.5);
+        // Sample environment map with roughness
+		vec3 envColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
 
-        // Blending
-		vec3 finalColor = mix(darkenedMainColor, reflectColor, u_reflectionFactor);
+        // Combine reflection and main color
+		vec3 reflectionColor = mix(u_mainColor, envColor, fresnelFactor);
+
+        // Apply reflection factor and transparency
+		vec3 finalColor = mix(u_mainColor, reflectionColor, u_reflectionFactor);
 		finalColor = mix(finalColor, backgroundColor, u_transparency);
 
-        // Apply ambient occlusion
+        // Apply simple ambient occlusion
+		float ao = ambientOcclusion(hitPos, n);
 		finalColor *= ao;
+
+        finalColor = adjustSaturation(finalColor, u_saturation);
 
 		gl_FragColor = vec4(finalColor, 1.0);
 	}
