@@ -29,6 +29,7 @@ float smin(float a, float b, float k) {
 // Scene function for spheres
 float scene(vec3 p) {
 	float minDistance = 1e10;
+
 	for(int i = 0; i < u_numSpheres; i++) {
 		vec4 sphereData = texture(u_sphereTexture, vec2(float(i) / float(u_numSpheres - 1), 0.0));
 		vec3 spherePos = sphereData.xyz;
@@ -37,6 +38,7 @@ float scene(vec3 p) {
 		float k = u_sphereKValues[i];
 		minDistance = smin(minDistance, distanceToSphere, k);
 	}
+
 	return minDistance;
 }
 
@@ -59,11 +61,9 @@ vec3 normal(vec3 p) {
 	return normalize(vec3(scene(p + e.xyy) - scene(p - e.xyy), scene(p + e.yxy) - scene(p - e.yxy), scene(p + e.yyx) - scene(p - e.yyx)));
 }
 
-float random(vec3 scale, float seed) {
-	return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 43758.5453 + seed);
-}
-
 void main() {
+
+
 	vec2 uv = vUv.xy;
 	vec3 ro = u_camPos;
 	vec3 rd = normalize((u_camInvProjMat * vec4(uv * 2. - 1., 0, 1)).xyz);
@@ -78,6 +78,7 @@ void main() {
 	if(dist >= u_maxDis) {
         // Ray didn't hit any object, use background image
 		gl_FragColor = vec4(backgroundColor, 1.0);
+		return;
 	} else {
 		vec3 hitPos = ro + dist * rd;
 		vec3 n = normal(hitPos);

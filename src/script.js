@@ -24,7 +24,7 @@ export default class ThreeJsDraft {
     this.height = window.innerHeight
     this.devicePixelRatio = window.devicePixelRatio
 
-    this.debug = true
+    this.debug = false
 
     this.MAIN_COLOR = 0x5C7CCE;
 
@@ -352,7 +352,7 @@ export default class ThreeJsDraft {
         this.material.vertexShader = Vertex;
         this.material.fragmentShader = Fragment;
 
-        if (this.debug) {
+        if (!this.debug) {
           this.scene.add(this.rayMarchPlane);
         }
 
@@ -411,7 +411,7 @@ export default class ThreeJsDraft {
       const values = line.split(',').map(Number);
       const textBall = this.getTextBall(new THREE.Vector3(values[1], values[2], values[3]), values[0])
 
-      if (!this.debug) {
+      if (this.debug) {
         this.scene.add(textBall.mesh);
       }
 
@@ -423,7 +423,7 @@ export default class ThreeJsDraft {
       const body = this.getBall();
       this.balls.push(body);
 
-      if (!this.debug) {
+      if (this.debug) {
         this.scene.add(body.mesh);
       }
 
