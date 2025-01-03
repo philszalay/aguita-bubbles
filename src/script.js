@@ -26,6 +26,8 @@ export default class ThreeJsDraft {
 
     this.debug = true
 
+    this.MAIN_COLOR = 0x5C7CCE;
+
     /**
      * Scene
      */
@@ -305,15 +307,7 @@ export default class ThreeJsDraft {
 
         this.bgTexture = new THREE.TextureLoader().load(background);
 
-        /**
- * Objects
- */
         this.createSphereTexture()
-
-        /**
- * Helpers
- */
-        this.addHelpers()
 
         /**
          * Lights
@@ -336,26 +330,22 @@ export default class ThreeJsDraft {
           u_eps: { value: 0.001 },
           u_maxDis: { value: 2 },
           u_maxSteps: { value: 500 },
-
           u_envMap: { value: hdrEquirect },
-
           u_camPos: { value: this.camera.position },
           u_camToWorldMat: { value: this.camera.matrixWorld },
           u_camInvProjMat: { value: this.camera.projectionMatrixInverse },
-
-          u_shininess: { value: 0.1 },
-
           u_sphereKValues: { value: this.sphereKValues },
-
-          u_backgroundTexture: { value: this.bgTexture },
-          u_mainColor: { value: new THREE.Color(0x5C7CCE) },
-
-          u_transparency: { value: 0.9 },
-          u_refractiveIndex: { value: 100 },
-
           u_sphereTexture: { value: this.sphereTexture },
-          u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls }
+          u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls },
+          u_backgroundTexture: { value: this.bgTexture },
+          u_mainColor: { value: new THREE.Color(this.MAIN_COLOR) },
+
+          u_roughness: { value: 0 },
+          u_reflectionFactor: { value: 0.03 },
+          u_transparency: { value: 0 }
         };
+
+        this.addHelpers()
 
         // Set material properties
         this.material.uniforms = this.uniforms;
@@ -402,17 +392,10 @@ export default class ThreeJsDraft {
       }
     }
 
-    gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('text_spheres_radius').onChange(onChange)
-    gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('ball_spheres_radius').onChange(onChange)
-    gui.add(this.radiusValues.lightPositionX, 'value', -5, 5).step(0.1).name('light_x').onChange((value) => {
-      this.light.position.x = value;
-    })
-    gui.add(this.radiusValues.lightPositionY, 'value', -5, 5).step(0.1).name('light_y').onChange((value) => {
-      this.light.position.y = value;
-    })
-    gui.add(this.radiusValues.lightPositionZ, 'value', -5, 5).step(0.1).name('light_z').onChange((value) => {
-      this.light.position.z = value;
-    })
+    gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('Logo Balls Radius').onChange(onChange)
+    gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('Mouse Balls Radius').onChange(onChange)
+    gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 0.1).step(0.01).name('Reflection');
+    gui.add(this.uniforms.u_transparency, 'value', 0, 0.2).step(0.01).name('Transparency');
 
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)

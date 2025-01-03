@@ -2,28 +2,24 @@ precision mediump float;
 
 in vec2 vUv;
 
-uniform sampler2D u_backgroundTexture;
-
 uniform float u_eps;
 uniform float u_maxDis;
 uniform int u_maxSteps;
-
 uniform vec3 u_camPos;
 uniform mat4 u_camToWorldMat;
 uniform mat4 u_camInvProjMat;
-
-uniform float u_shininess;
-
-uniform sampler2D u_sphereTexture;
 uniform int u_numSpheres;
 uniform float u_sphereKValues[158];
-
-uniform float u_transparency;
-uniform float u_refractiveIndex;
-
+uniform sampler2D u_sphereTexture;
 uniform sampler2D u_envMap;
+uniform sampler2D u_backgroundTexture;
 
+uniform float u_shininess;
 uniform vec3 u_mainColor;
+
+uniform float u_reflectionFactor;
+uniform float u_transparency;
+uniform float u_roughness;
 
 // Smooth minimum function
 float smin(float a, float b, float k) {
@@ -64,6 +60,10 @@ vec3 normal(vec3 p) {
 	return normalize(vec3(scene(p + e.xyy) - scene(p - e.xyy), scene(p + e.yxy) - scene(p - e.yxy), scene(p + e.yyx) - scene(p - e.yyx)));
 }
 
+float random(vec3 scale, float seed) {
+	return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 43758.5453 + seed);
+}
+
 void main() {
 	vec2 uv = vUv.xy;
 	vec3 ro = u_camPos;
@@ -72,9 +72,12 @@ void main() {
 
     // Ray marching to determine hit point
 	float dist = rayMarch(ro, rd);
+
+    // Colors
+	vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
+
 	if(dist >= u_maxDis) {
         // Ray didn't hit any object, use background image
-		vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
 		gl_FragColor = vec4(backgroundColor, 1.0);
 	} else {
 		vec3 hitPos = ro + dist * rd;
@@ -82,30 +85,19 @@ void main() {
 
         // Reflection and refraction
 		vec3 reflectDir = reflect(rd, n);
-		vec3 refractDir = refract(rd, n, 1.0 / u_refractiveIndex);
-
-		vec2 distortion = refractDir.xy * (1.0 - u_transparency) * 0.02; // Adjust the 0.1 to control distortion strength
-
-		// Sample background image with distortion
-		vec2 distortedUV = uv + distortion;
-		vec3 backgroundColor = texture(u_backgroundTexture, distortedUV).rgb;
-
-		//vec3 customColor = mix(backgroundColor, u_mainColor, 0.7);
-		vec3 customColor = u_mainColor;
 
         // Sample HDRI for reflection and refraction colors
 		vec3 reflectColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
-		vec3 refractColor = texture(u_envMap, refractDir.xy * 0.5 + 0.5).rgb;
 
-        // Mix reflection and refraction colors
-		vec3 glassColor = mix(refractColor, reflectColor, 0.9);
+        // Darken the main color based on transparency
+		vec3 darkenedMainColor = u_mainColor * (1.0 - u_transparency * 0.5);
 
-        // Sample background image
+        // Apply roughness to reflection
+		vec3 roughReflection = mix(reflectColor, vec3(0.5), u_roughness);
 
-		// vec2 a = vec2(vUv.y, vUv.x);
-
-        // Blend glass color with background color based on transparency
-		vec3 finalColor = mix(glassColor, customColor, u_transparency);
+        // Blending
+		vec3 finalColor = mix(darkenedMainColor, roughReflection, u_reflectionFactor);
+		finalColor = mix(finalColor, backgroundColor, u_transparency);
 
 		gl_FragColor = vec4(finalColor, 1.0);
 	}
