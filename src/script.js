@@ -19,10 +19,11 @@ export default class ThreeJsDraft {
      * Variables
     */
 
+    this.scalingFactor = 0.5
+
     this.canvas = document.querySelector('canvas.webgl')
-    this.width = window.innerWidth
-    this.height = window.innerHeight
-    this.devicePixelRatio = window.devicePixelRatio
+    this.width = window.innerWidth * this.scalingFactor
+    this.height = window.innerHeight * this.scalingFactor
 
     this.debug = false
 
@@ -50,8 +51,9 @@ export default class ThreeJsDraft {
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas
     })
+
     this.renderer.setSize(this.width, this.height)
-    // this.renderer.setPixelRatio(Math.min(this.devicePixelRatio, 2))
+    this.renderer.setPixelRatio(1)
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
@@ -76,28 +78,24 @@ export default class ThreeJsDraft {
 
     this.radiusValues = {
       textSpheresRadius: { value: 0.025 },
-      ballSpheresRadius: { value: 0.1 },
-      lightPositionX: { value: 0 },
-      lightPositionY: { value: 0 },
-      lightPositionZ: { value: 1.6 }
+      ballSpheresRadius: { value: 0.1 }
     }
 
     /**
      * Resize
      */
     window.addEventListener('resize', () => {
-      this.width = window.innerWidth
-      this.height = window.innerHeight
+      this.width = window.innerWidth * this.scalingFactor
+      this.height = window.innerHeight * this.scalingFactor
       this.camera.aspect = this.width / this.height
       this.camera.updateProjectionMatrix()
 
       this.devicePixelRatio = window.devicePixelRatio
 
       this.renderer.setSize(this.width, this.height)
-      // this.renderer.setPixelRatio(Math.min(this.devicePixelRatio, 2))
     }, false)
 
-    document.addEventListener('mousemove', (event) => {
+    this.canvas.addEventListener('mousemove', (event) => {
       this.mouseX = event.clientX
       this.mouseY = event.clientY
 
@@ -105,7 +103,7 @@ export default class ThreeJsDraft {
         (this.mouseX / window.innerWidth) * 2 - 1,
         -(this.mouseY / window.innerHeight) * 2 + 1,
         0
-      )
+      ).multiplyScalar(1 / this.scalingFactor)
 
       mousePosition.unproject(this.camera);
       const dir = mousePosition.sub(this.camera.position).normalize();
@@ -309,11 +307,6 @@ export default class ThreeJsDraft {
 
         this.createSphereTexture()
 
-        /**
-         * Lights
-         */
-        this.addLight()
-
         // Create a ray marching plane
         const geometry = new THREE.PlaneGeometry();
         this.material = new THREE.ShaderMaterial();
@@ -368,13 +361,6 @@ export default class ThreeJsDraft {
       });
   }
 
-  addLight() {
-    // add ambient light
-    // this.light = new THREE.DirectionalLight('red', 1);
-    // this.light.position.set(this.radiusValues.lightPositionX.value, this.radiusValues.lightPositionY.value, this.radiusValues.lightPositionZ.value);
-    // this.scene.add(this.light);
-  }
-
   addHelpers() {
     const axisHelper = new THREE.AxesHelper(3)
     this.scene.add(axisHelper)
@@ -396,7 +382,6 @@ export default class ThreeJsDraft {
     gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('Mouse Balls Radius').onChange(onChange)
     gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 0.1).step(0.01).name('Reflection');
     gui.add(this.uniforms.u_transparency, 'value', 0, 0.5).step(0.01).name('Transparency');
-    gui.add(this.uniforms.u_roughness, 'value', 0, 1).step(0.01).name('Roughness');
 
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)
@@ -440,9 +425,7 @@ export default class ThreeJsDraft {
   }
 
   animate() {
-    setTimeout(() => {
-      window.requestAnimationFrame(this.animate.bind(this));
-    }, 1000 / 60);
+    window.requestAnimationFrame(this.animate.bind(this));
 
     this.world.step();
 
