@@ -90,23 +90,23 @@ void main() {
 		vec2 distortedUV = uv + distortion;
 		vec3 backgroundColor = texture(u_backgroundTexture, distortedUV).rgb;
 
+		//vec3 customColor = mix(backgroundColor, u_mainColor, 0.7);
+		vec3 customColor = u_mainColor;
+
         // Sample HDRI for reflection and refraction colors
 		vec3 reflectColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
 		vec3 refractColor = texture(u_envMap, refractDir.xy * 0.5 + 0.5).rgb;
 
         // Mix reflection and refraction colors
-		vec3 glassColor = mix(refractColor, reflectColor, 0.8);
+		vec3 glassColor = mix(refractColor, reflectColor, 0.9);
 
         // Sample background image
 
 		// vec2 a = vec2(vUv.y, vUv.x);
 
         // Blend glass color with background color based on transparency
-		vec3 finalColor = mix(glassColor, backgroundColor, u_transparency);
+		vec3 finalColor = mix(glassColor, customColor, u_transparency);
 
-        // Set final color with full opacity
-		finalColor.b += 0.6;
-		finalColor.r += 0.4;
 		gl_FragColor = vec4(finalColor, 1.0);
 	}
 }

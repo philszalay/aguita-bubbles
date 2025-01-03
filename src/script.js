@@ -55,7 +55,7 @@ export default class ThreeJsDraft {
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.renderer.physicallyCorrectLights = true;
 
-    this.backgroundColor = new THREE.Color(0x3399ee);
+    this.backgroundColor = new THREE.Color(0x50a9df);
     this.renderer.setClearColor(this.backgroundColor, 1);
 
     /**
@@ -343,15 +343,15 @@ export default class ThreeJsDraft {
           u_camToWorldMat: { value: this.camera.matrixWorld },
           u_camInvProjMat: { value: this.camera.projectionMatrixInverse },
 
-          u_shininess: { value: 0.5 },
+          u_shininess: { value: 0.1 },
 
           u_sphereKValues: { value: this.sphereKValues },
 
           u_backgroundTexture: { value: this.bgTexture },
-          u_mainColor: { value: new THREE.Color(0x3a70c7) },
+          u_mainColor: { value: new THREE.Color(0x5C7CCE) },
 
-          u_transparency: { value: 0.2 },
-          u_refractiveIndex: { value: 1 },
+          u_transparency: { value: 0.9 },
+          u_refractiveIndex: { value: 100 },
 
           u_sphereTexture: { value: this.sphereTexture },
           u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls }
