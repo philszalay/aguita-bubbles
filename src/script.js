@@ -340,7 +340,7 @@ export default class ThreeJsDraft {
           u_backgroundTexture: { value: this.bgTexture },
           u_mainColor: { value: new THREE.Color(this.MAIN_COLOR) },
 
-          u_roughness: { value: 0 },
+          u_roughness: { value: 0.5 },
           u_reflectionFactor: { value: 0.03 },
           u_transparency: { value: 0 }
         };
@@ -395,7 +395,8 @@ export default class ThreeJsDraft {
     gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('Logo Balls Radius').onChange(onChange)
     gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('Mouse Balls Radius').onChange(onChange)
     gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 0.1).step(0.01).name('Reflection');
-    gui.add(this.uniforms.u_transparency, 'value', 0, 0.2).step(0.01).name('Transparency');
+    gui.add(this.uniforms.u_transparency, 'value', 0, 0.5).step(0.01).name('Transparency');
+    gui.add(this.uniforms.u_roughness, 'value', 0, 1).step(0.01).name('Roughness');
 
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)

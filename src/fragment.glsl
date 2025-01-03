@@ -14,7 +14,6 @@ uniform sampler2D u_sphereTexture;
 uniform sampler2D u_envMap;
 uniform sampler2D u_backgroundTexture;
 
-uniform float u_shininess;
 uniform vec3 u_mainColor;
 
 uniform float u_reflectionFactor;
@@ -92,11 +91,8 @@ void main() {
         // Darken the main color based on transparency
 		vec3 darkenedMainColor = u_mainColor * (1.0 - u_transparency * 0.5);
 
-        // Apply roughness to reflection
-		vec3 roughReflection = mix(reflectColor, vec3(0.5), u_roughness);
-
         // Blending
-		vec3 finalColor = mix(darkenedMainColor, roughReflection, u_reflectionFactor);
+		vec3 finalColor = mix(darkenedMainColor, reflectColor, u_reflectionFactor);
 		finalColor = mix(finalColor, backgroundColor, u_transparency);
 
 		gl_FragColor = vec4(finalColor, 1.0);
