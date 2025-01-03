@@ -55,6 +55,18 @@ float rayMarch(vec3 ro, vec3 rd) {
 	return d;
 }
 
+float ambientOcclusion(vec3 p, vec3 n) {
+	float occ = 0.0;
+	float sca = 1.0;
+	for(int i = 0; i < 5; i++) {
+		float h = 0.01 + 0.12 * float(i) / 4.0;
+		float d = scene(p + h * n);
+		occ += (h - d) * sca;
+		sca *= 0.95;
+	}
+	return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
+}
+
 // Approximate normal
 vec3 normal(vec3 p) {
 	vec3 e = vec3(u_eps, 0.0, 0.0);
@@ -62,7 +74,6 @@ vec3 normal(vec3 p) {
 }
 
 void main() {
-
 
 	vec2 uv = vUv.xy;
 	vec3 ro = u_camPos;
@@ -73,15 +84,21 @@ void main() {
 	float dist = rayMarch(ro, rd);
 
     // Colors
-	vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
+
+	// Don't use texture for now	
+	//vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
+
+	vec3 backgroundColor = vec3(0.0, 0.0, 0.0);
 
 	if(dist >= u_maxDis) {
         // Ray didn't hit any object, use background image
 		gl_FragColor = vec4(backgroundColor, 1.0);
-		return;
 	} else {
 		vec3 hitPos = ro + dist * rd;
 		vec3 n = normal(hitPos);
+
+        // Calculate ambient occlusion
+		float ao = ambientOcclusion(hitPos, n);
 
         // Reflection and refraction
 		vec3 reflectDir = reflect(rd, n);
@@ -95,6 +112,9 @@ void main() {
         // Blending
 		vec3 finalColor = mix(darkenedMainColor, reflectColor, u_reflectionFactor);
 		finalColor = mix(finalColor, backgroundColor, u_transparency);
+
+        // Apply ambient occlusion
+		finalColor *= ao;
 
 		gl_FragColor = vec4(finalColor, 1.0);
 	}

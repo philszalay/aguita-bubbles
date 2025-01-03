@@ -19,7 +19,7 @@ export default class ThreeJsDraft {
      * Variables
     */
 
-    this.scalingFactor = 0.5
+    this.scalingFactor = 1.2
 
     this.canvas = document.querySelector('canvas.webgl')
     this.width = window.innerWidth * this.scalingFactor
@@ -89,10 +89,8 @@ export default class ThreeJsDraft {
       this.height = window.innerHeight * this.scalingFactor
       this.camera.aspect = this.width / this.height
       this.camera.updateProjectionMatrix()
-
-      this.devicePixelRatio = window.devicePixelRatio
-
       this.renderer.setSize(this.width, this.height)
+      this.setRayMarchPlaneScale()
     }, false)
 
     this.canvas.addEventListener('mousemove', (event) => {
@@ -291,6 +289,15 @@ export default class ThreeJsDraft {
     return { mesh, rigid, update: update.bind(this) };
   }
 
+  setRayMarchPlaneScale() {
+    // Get the wdith and height of the near plane
+    const nearPlaneWidth = this.camera.near * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect * 2;
+    const nearPlaneHeight = nearPlaneWidth / this.camera.aspect;
+
+    // Scale the ray marching plane
+    this.rayMarchPlane.scale.set(nearPlaneWidth, nearPlaneHeight, 1);
+  }
+
   loadAssets() {
     const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
@@ -312,12 +319,7 @@ export default class ThreeJsDraft {
         this.material = new THREE.ShaderMaterial();
         this.rayMarchPlane = new THREE.Mesh(geometry, this.material)
 
-        // Get the wdith and height of the near plane
-        const nearPlaneWidth = this.camera.near * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect * 2;
-        const nearPlaneHeight = nearPlaneWidth / this.camera.aspect;
-
-        // Scale the ray marching plane
-        this.rayMarchPlane.scale.set(nearPlaneWidth, nearPlaneHeight, 1);
+        this.setRayMarchPlaneScale();
 
         this.uniforms = {
           u_eps: { value: 0.001 },
@@ -380,7 +382,7 @@ export default class ThreeJsDraft {
 
     gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('Logo Balls Radius').onChange(onChange)
     gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('Mouse Balls Radius').onChange(onChange)
-    gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 0.1).step(0.01).name('Reflection');
+    gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 1).step(0.01).name('Reflection');
     gui.add(this.uniforms.u_transparency, 'value', 0, 0.5).step(0.01).name('Transparency');
 
     this.stats = Stats()
