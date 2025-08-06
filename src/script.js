@@ -21,13 +21,18 @@ export default class ThreeJsDraft {
 
     this.canvas = document.getElementById('bubbles');
 
-    console.log('Initializing bubbles with canvas:', this.canvas);
+    this.videoElement = document.getElementById('video');
+    this.videoElement.setAttribute('crossorigin', 'anonymous');
+    this.videoElement.src = './src/video.mp4';
+    this.videoElement.src = './src/video.mp4';
+    this.videoElement.load(); // must call after setting/changing source
+    this.videoElement.play();
 
     const rect = this.canvas.getBoundingClientRect();
     this.width = rect.width * this.scalingFactor;
     this.height = rect.height * this.scalingFactor;
 
-    this.debug = true
+    this.debug = false
 
     this.MAIN_COLOR = 0x007FFF;
 
@@ -50,7 +55,7 @@ export default class ThreeJsDraft {
     /**
      * Renderer
      */
-    this.renderTarget = new THREE.WebGLRenderTarget(this.width / 1, this.height / 1);
+    this.renderTarget = new THREE.WebGLRenderTarget(this.width / 2, this.height / 2);
 
     // Setup for rendering the low-res result to screen
     this.fullscreenQuad = new THREE.Mesh(
@@ -343,7 +348,7 @@ export default class ThreeJsDraft {
         this.scene.environment = hdrEquirect; // Set HDRI as environment map
         this.scene.background = hdrEquirect; // Optional: Set HDRI as background
 
-        this.bgTexture = new THREE.TextureLoader().load('https://cdn.jsdelivr.net/gh/philszalay/aguita-bubbles@squarespace_integration/src/background.png');
+        this.bgTexture = new THREE.VideoTexture(this.videoElement);
 
         this.createSphereTexture()
 
@@ -514,8 +519,6 @@ function initBubbles() {
     console.error('Canvas #bubbles not found');
   }
 }
-
-console.log('hallo was geht');
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initBubbles);

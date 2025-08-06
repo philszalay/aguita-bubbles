@@ -105,9 +105,10 @@ void main() {
     // Colors
 
 	// Don't use texture for now	
-	//vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
+	vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
 
-	vec3 backgroundColor = vec3(0.0, 0.0, 0.0);
+	
+	// vec3 backgroundColor = vec3(0.0, 0.0, 0.0);
 
 	if(dist >= u_maxDis) {
         // Ray didn't hit any object, use background image
