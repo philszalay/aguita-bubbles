@@ -21,7 +21,7 @@ export default class ThreeJsDraft {
 
     this.scalingFactor = 1
 
-    this.canvas = document.querySelector('bubbles');
+    this.canvas = document.getElementById('bubbles');
 
     const rect = this.canvas.getBoundingClientRect();
     this.width = rect.width * this.scalingFactor;
