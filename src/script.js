@@ -515,6 +515,8 @@ function initBubbles() {
   }
 }
 
+console.log('hallo was geht');
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initBubbles);
 } else {
