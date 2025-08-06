@@ -505,4 +505,18 @@ export default class ThreeJsDraft {
  * Create ThreeJsDraft
  */
 // eslint-disable-next-line no-new
-window.ThreeJsDraft = new ThreeJsDraft()
+function initBubbles() {
+  const canvas = document.getElementById('bubbles');
+  if (canvas) {
+    console.log('Initializing bubbles with canvas:', canvas);
+    window.ThreeJsDraft = new ThreeJsDraft();
+  } else {
+    console.error('Canvas #bubbles not found');
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBubbles);
+} else {
+  initBubbles();
+}
