@@ -10,7 +10,6 @@ import logoCoordinates from './logoCoordinates.txt'
 import RAPIER from '@dimforge/rapier3d-compat';
 import { GUI } from 'dat.gui'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
-import background from '../assets/images/background.png';
 
 export default class ThreeJsDraft {
   constructor() {
@@ -344,7 +343,7 @@ export default class ThreeJsDraft {
         this.scene.environment = hdrEquirect; // Set HDRI as environment map
         this.scene.background = hdrEquirect; // Optional: Set HDRI as background
 
-        this.bgTexture = new THREE.TextureLoader().load(background);
+        this.bgTexture = new THREE.TextureLoader().load('https://cdn.jsdelivr.net/gh/philszalay/aguita-bubbles@squarespace_integration/src/background.png');
 
         this.createSphereTexture()
 
