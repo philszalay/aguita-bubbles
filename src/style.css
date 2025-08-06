@@ -8,6 +8,12 @@ body {
     align-items: center;
     justify-content: center;
     height: 100%;
+    background-color: black;
+}
+
+#resolution-button {
+    position: absolute;
+    top: 50px;
 }
 
 .webgl {

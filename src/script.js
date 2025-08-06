@@ -19,13 +19,13 @@ export default class ThreeJsDraft {
      * Variables
     */
 
-    this.scalingFactor = 0.5
+    this.scalingFactor = 1
 
     this.canvas = document.querySelector('canvas.webgl')
     this.width = window.innerWidth * this.scalingFactor
     this.height = window.innerHeight * this.scalingFactor
 
-    this.debug = false
+    this.debug = true
 
     this.MAIN_COLOR = 0x007FFF;
 
@@ -48,6 +48,35 @@ export default class ThreeJsDraft {
     /**
      * Renderer
      */
+    this.renderTarget = new THREE.WebGLRenderTarget(this.width / 1, this.height / 1);
+
+    // Setup for rendering the low-res result to screen
+    this.fullscreenQuad = new THREE.Mesh(
+      new THREE.PlaneBufferGeometry(2, 2),
+      new THREE.ShaderMaterial({
+        vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+        fragmentShader: `
+        uniform sampler2D tDiffuse;
+        varying vec2 vUv;
+        void main() {
+          gl_FragColor = texture2D(tDiffuse, vUv);
+        }
+      `,
+        uniforms: {
+          tDiffuse: { value: this.renderTarget.texture }
+        }
+      })
+    );
+    this.fullscreenScene = new THREE.Scene();
+    this.fullscreenScene.add(this.fullscreenQuad);
+    this.fullscreenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas
     })
@@ -456,7 +485,15 @@ export default class ThreeJsDraft {
 
     this.orbitControls.update()
     this.stats.update()
-    this.renderer.render(this.scene, this.camera)
+    // this.renderer.render(this.scene, this.camera)
+
+    // Render to the low-resolution render target
+    this.renderer.setRenderTarget(this.renderTarget);
+    this.renderer.render(this.scene, this.camera);
+
+    // Render the low-resolution result to the screen
+    this.renderer.setRenderTarget(null);
+    this.renderer.render(this.fullscreenScene, this.fullscreenCamera);
   }
 }
 
@@ -464,4 +501,17 @@ export default class ThreeJsDraft {
  * Create ThreeJsDraft
  */
 // eslint-disable-next-line no-new
-new ThreeJsDraft()
+const draft = new ThreeJsDraft()
+
+const button = document.getElementById('resolution-button')
+let i = 0;
+
+button.addEventListener('click', () => {
+  if (i % 2 === 0) {
+    draft.renderTarget.setSize(draft.width / 2, draft.height / 2)
+  } else {
+    draft.renderTarget.setSize(draft.width, draft.height)
+  }
+
+  i++
+})
