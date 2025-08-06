@@ -88,58 +88,89 @@ vec3 sampleEnvMap(vec3 reflectDir, float roughness) {
 
 // Sättigungsfunktion
 vec3 adjustSaturation(vec3 color, float saturation) {
-    float luminance = dot(color, vec3(0.299, 0.587, 0.114));
-    return mix(vec3(luminance), color, saturation);
+	float luminance = dot(color, vec3(0.299, 0.587, 0.114));
+	return mix(vec3(luminance), color, saturation);
+}
+
+// Add this function
+vec3 refract2(vec3 incident, vec3 normal, float eta) {
+	float cosI = -dot(normal, incident);
+	float sinT2 = eta * eta * (1.0 - cosI * cosI);
+	if(sinT2 > 1.0)
+		return vec3(0.0); // Total internal reflection
+	return eta * incident + (eta * cosI - sqrt(1.0 - sinT2)) * normal;
 }
 
 void main() {
-
 	vec2 uv = vUv.xy;
 	vec3 ro = u_camPos;
 	vec3 rd = normalize((u_camInvProjMat * vec4(uv * 2. - 1., 0, 1)).xyz);
 	rd = (u_camToWorldMat * vec4(rd, 0)).xyz;
 
-    // Ray marching to determine hit point
+	vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
 	float dist = rayMarch(ro, rd);
 
-    // Colors
-
-	// Don't use texture for now	
-	vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
-
-	
-	// vec3 backgroundColor = vec3(0.0, 0.0, 0.0);
-
 	if(dist >= u_maxDis) {
-        // Ray didn't hit any object, use background image
 		gl_FragColor = vec4(backgroundColor, 1.0);
-	} else {
-		vec3 hitPos = ro + dist * rd;
-		vec3 n = normal(hitPos);
-
-        // Calculate reflection direction
-		vec3 reflectDir = reflect(rd, n);
-
-        // Calculate Fresnel factor
-		float F0 = 1. - u_roughness; // High value for metallic surfaces like silver
-		float fresnelFactor = fresnel(max(dot(-rd, n), 0.0), F0);
-
-        // Sample environment map with roughness
-		vec3 envColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
-
-        // Combine reflection and main color
-		vec3 reflectionColor = mix(u_mainColor, envColor, fresnelFactor);
-
-        // Apply reflection factor and transparency
-		vec3 finalColor = mix(u_mainColor, reflectionColor, u_reflectionFactor);
-		finalColor = mix(finalColor, backgroundColor, u_transparency);
-
-        // Apply simple ambient occlusion
-		float ao = ambientOcclusion(hitPos, n);
-		finalColor *= ao;
-
-        finalColor = adjustSaturation(finalColor, u_saturation);
-
-		gl_FragColor = vec4(finalColor, 1.0);
+		return;
 	}
+
+	vec3 hitPos = ro + dist * rd;
+	vec3 n = normal(hitPos);
+
+    // Glass properties
+	float ior = 1.5; // Index of refraction for glass
+	float eta = 1.0 / ior; // Air to glass ratio
+
+    // Calculate reflection and refraction directions
+	vec3 reflectDir = reflect(rd, n);
+	vec3 refractDir = refract2(rd, n, eta);
+
+    // Fresnel effect (stronger for glass)
+	float F0 = pow((1.0 - ior) / (1.0 + ior), 2.0);
+	float fresnelFactor = fresnel(max(dot(-rd, n), 0.0), F0);
+
+    // Sample environment for reflection
+	vec3 reflectionColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
+
+    // Sample background through refraction
+	vec3 refractionColor = backgroundColor;
+	if(length(refractDir) > 0.0) {
+        // March through the glass to find exit point
+		vec3 refractRo = hitPos + refractDir * u_eps * 2.0;
+		float refractDist = rayMarch(refractRo, refractDir);
+
+		if(refractDist < u_maxDis) {
+			vec3 exitPos = refractRo + refractDist * refractDir;
+			vec3 exitNormal = -normal(exitPos); // Flip normal for exit
+
+            // Refract again when exiting glass
+			vec3 finalRefractDir = refract2(refractDir, exitNormal, ior);
+			if(length(finalRefractDir) > 0.0) {
+                // Calculate distorted UV coordinates
+				vec3 projectedPos = exitPos + finalRefractDir * 0.1;
+				vec2 distortedUV = uv + (projectedPos.xy - hitPos.xy) * 0.1;
+				distortedUV = clamp(distortedUV, 0.0, 1.0);
+				refractionColor = texture(u_backgroundTexture, distortedUV).rgb;
+			}
+		}
+	}
+
+    // Mix reflection and refraction based on Fresnel
+	vec3 glassColor = mix(refractionColor, reflectionColor, fresnelFactor);
+
+    // Add slight tint (optional)
+	vec3 glassTint = u_mainColor;
+	glassColor = mix(glassColor, glassColor * glassTint, 0.1);
+
+    // Apply transparency
+	vec3 finalColor = mix(glassColor, backgroundColor, u_transparency);
+
+    // Apply ambient occlusion (lighter for glass)
+	float ao = ambientOcclusion(hitPos, n);
+	ao = mix(1.0, ao, 0.3); // Reduce AO effect for glass
+	finalColor *= ao;
+
+	finalColor = adjustSaturation(finalColor, u_saturation);
+	gl_FragColor = vec4(finalColor, 1.0);
 }
