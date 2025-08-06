@@ -23,6 +23,8 @@ export default class ThreeJsDraft {
 
     this.canvas = document.getElementById('bubbles');
 
+    console.log('Initializing bubbles with canvas:', this.canvas);
+
     const rect = this.canvas.getBoundingClientRect();
     this.width = rect.width * this.scalingFactor;
     this.height = rect.height * this.scalingFactor;
