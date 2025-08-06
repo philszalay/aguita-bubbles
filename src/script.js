@@ -21,9 +21,11 @@ export default class ThreeJsDraft {
 
     this.scalingFactor = 1
 
-    this.canvas = document.querySelector('canvas.webgl')
-    this.width = window.innerWidth * this.scalingFactor
-    this.height = window.innerHeight * this.scalingFactor
+    this.canvas = document.querySelector('bubbles');
+
+    const rect = this.canvas.getBoundingClientRect();
+    this.width = rect.width * this.scalingFactor;
+    this.height = rect.height * this.scalingFactor;
 
     this.debug = true
 
@@ -114,13 +116,15 @@ export default class ThreeJsDraft {
      * Resize
      */
     window.addEventListener('resize', () => {
-      this.width = window.innerWidth * this.scalingFactor
-      this.height = window.innerHeight * this.scalingFactor
-      this.camera.aspect = this.width / this.height
-      this.camera.updateProjectionMatrix()
-      this.renderer.setSize(this.width, this.height)
-      this.setRayMarchPlaneScale()
-    }, false)
+      const rect = this.canvas.getBoundingClientRect();
+      this.width = rect.width * this.scalingFactor;
+      this.height = rect.height * this.scalingFactor;
+
+      this.camera.aspect = this.width / this.height;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(this.width, this.height);
+      this.setRayMarchPlaneScale();
+    }, false);
 
     this.canvas.addEventListener('mousemove', (event) => {
       this.mouseX = event.clientX
@@ -501,17 +505,4 @@ export default class ThreeJsDraft {
  * Create ThreeJsDraft
  */
 // eslint-disable-next-line no-new
-const draft = new ThreeJsDraft()
-
-const button = document.getElementById('resolution-button')
-let i = 0;
-
-button.addEventListener('click', () => {
-  if (i % 2 === 0) {
-    draft.renderTarget.setSize(draft.width / 2, draft.height / 2)
-  } else {
-    draft.renderTarget.setSize(draft.width, draft.height)
-  }
-
-  i++
-})
+window.ThreeJsDraft = new ThreeJsDraft()
