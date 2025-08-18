@@ -24,7 +24,7 @@ export default class ThreeJsDraft {
 
     this.videoElement = document.getElementById('video');
     this.videoElement.setAttribute('crossorigin', 'anonymous');
-    this.videoElement.src = 'https://cdn.jsdelivr.net/gh/philszalay/aguita-bubbles@squarespace_integration/src/background-video.mp4';
+    this.videoElement.src = 'https://cdn.jsdelivr.net/gh/philszalay/aguita-bubbles@squarespace_integration/src/background-video2.mp4';
     this.videoElement.load(); // must call after setting/changing source
     this.videoElement.play();
 
