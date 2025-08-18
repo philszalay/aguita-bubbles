@@ -2,7 +2,6 @@
 /* eslint-disable space-before-function-paren */
 import './style.css'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import Vertex from './vertex.glsl'
 import Fragment from './fragment.glsl'
@@ -20,20 +19,18 @@ export default class ThreeJsDraft {
     this.scalingFactor = 1
 
     this.canvas = document.getElementById('bubbles');
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
 
     this.videoElement = document.getElementById('video');
     this.videoElement.setAttribute('crossorigin', 'anonymous');
-    this.videoElement.src = 'https://cdn.jsdelivr.net/gh/philszalay/aguita-bubbles@squarespace_integration/src/video.mp4';
+    this.videoElement.src = './video.mp4';
     this.videoElement.load(); // must call after setting/changing source
     this.videoElement.play();
 
-    const rect = this.canvas.getBoundingClientRect();
-    this.width = rect.width * this.scalingFactor;
-    this.height = rect.height * this.scalingFactor;
-
     this.debug = false
 
-    this.MAIN_COLOR = 0x007FFF;
+    this.bubbleColor = new THREE.Color(0xffffff)
 
     /**
      * Scene
@@ -48,13 +45,13 @@ export default class ThreeJsDraft {
     /**
      * Camera
      */
-    this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 10)
+    this.camera = new THREE.PerspectiveCamera(75, this.canvas.width / this.canvas.height, 0.1, 10)
     this.camera.position.z = 0.75
 
     /**
      * Renderer
      */
-    this.renderTarget = new THREE.WebGLRenderTarget(this.width / 2, this.height / 2);
+    this.renderTarget = new THREE.WebGLRenderTarget(this.canvas.width, this.canvas.height);
 
     // Setup for rendering the low-res result to screen
     this.fullscreenQuad = new THREE.Mesh(
@@ -87,7 +84,10 @@ export default class ThreeJsDraft {
       canvas: this.canvas
     })
 
-    this.renderer.setSize(this.width, this.height)
+    this.framesPerSecond = 15;
+    this.lastFrameTime = Date.now();
+
+    this.renderer.setSize(this.canvas.width, this.canvas.height)
     this.renderer.setPixelRatio(1)
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
@@ -96,12 +96,6 @@ export default class ThreeJsDraft {
 
     this.backgroundColor = new THREE.Color(0x50a9df);
     this.renderer.setClearColor(this.backgroundColor, 1);
-
-    /**
-     * Controls
-     */
-    this.orbitControls = new OrbitControls(this.camera, this.canvas)
-    this.orbitControls.enabled = false
 
     /**
       * Rapier
@@ -120,13 +114,11 @@ export default class ThreeJsDraft {
      * Resize
      */
     window.addEventListener('resize', () => {
-      const rect = this.canvas.getBoundingClientRect();
-      this.width = rect.width * this.scalingFactor;
-      this.height = rect.height * this.scalingFactor;
-
-      this.camera.aspect = this.width / this.height;
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+      this.camera.aspect = this.canvas.width / this.canvas.height;
       this.camera.updateProjectionMatrix();
-      this.renderer.setSize(this.width, this.height);
+      this.renderer.setSize(this.canvas.width, this.canvas.height);
       this.setRayMarchPlaneScale();
     }, false);
 
@@ -249,8 +241,8 @@ export default class ThreeJsDraft {
     const maxSize = 0.05;
     const size = minSize + Math.random() * (maxSize - minSize);
 
-    const baseDamping = 5;
-    const baseForce = 0.005;
+    const baseDamping = 15;
+    const baseForce = 0.03;
 
     const density = size;
 
@@ -370,8 +362,7 @@ export default class ThreeJsDraft {
           u_sphereTexture: { value: this.sphereTexture },
           u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls },
           u_backgroundTexture: { value: this.bgTexture },
-          u_mainColor: { value: new THREE.Color(this.MAIN_COLOR) },
-
+          u_bubbleColor: { value: this.bubbleColor },
           u_roughness: { value: 0.7 },
           u_reflectionFactor: { value: 0.02 },
           u_transparency: { value: 0 },
@@ -467,9 +458,13 @@ export default class ThreeJsDraft {
     );
   }
 
-  animate() {
-    window.requestAnimationFrame(this.animate.bind(this));
-
+  animate() {   
+    if (Date.now() - this.lastFrameTime < 1000 / this.framesPerSecond) {
+      this.lastFrameTime = Date.now();
+      window.requestAnimationFrame(this.animate.bind(this));
+      return;
+    }
+    
     this.world.step();
 
     // Update texture with current balls position
@@ -491,7 +486,6 @@ export default class ThreeJsDraft {
 
     this.sphereTexture.needsUpdate = true;
 
-    this.orbitControls.update()
     this.stats.update()
     // this.renderer.render(this.scene, this.camera)
 
@@ -502,6 +496,8 @@ export default class ThreeJsDraft {
     // Render the low-resolution result to the screen
     this.renderer.setRenderTarget(null);
     this.renderer.render(this.fullscreenScene, this.fullscreenCamera);
+
+    window.requestAnimationFrame(this.animate.bind(this));
   }
 }
 

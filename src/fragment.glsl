@@ -14,7 +14,7 @@ uniform sampler2D u_sphereTexture;
 uniform sampler2D u_envMap;
 uniform sampler2D u_backgroundTexture;
 
-uniform vec3 u_mainColor;
+uniform vec3 u_bubbleColor;
 
 uniform float u_reflectionFactor;
 uniform float u_transparency;
@@ -160,7 +160,7 @@ void main() {
 	vec3 glassColor = mix(refractionColor, reflectionColor, fresnelFactor);
 
     // Add slight tint (optional)
-	vec3 glassTint = u_mainColor;
+	vec3 glassTint = u_bubbleColor;
 	glassColor = mix(glassColor, glassColor * glassTint, 0.1);
 
     // Apply transparency
