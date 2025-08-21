@@ -10,22 +10,19 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { GUI } from 'dat.gui'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 
+const TARGET_ASPECT_RATIO = 1920 / 1080;
+
 export default class ThreeJsDraft {
-  constructor() {
+  constructor(canvas) {
     /**
      * Variables
     */
 
     this.scalingFactor = 1
 
-    this.canvas = document.getElementById('bubbles');
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    this.canvas = canvas;
 
-    this.videoElement = document.getElementById('video');
-    this.videoElement.setAttribute('crossorigin', 'anonymous');
-    this.videoElement.src = 'https://cdn.jsdelivr.net/gh/philszalay/aguita-bubbles@squarespace_integration/src/background-video2.mp4';
-    this.videoElement.load(); // must call after setting/changing source
+    this.videoElement = document.querySelector('video');
     this.videoElement.play();
 
     this.debug = false
@@ -111,16 +108,46 @@ export default class ThreeJsDraft {
     }
 
     /**
-     * Resize
+     * Resize function
      */
-    window.addEventListener('resize', () => {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
-      this.camera.aspect = this.canvas.width / this.canvas.height;
+    this.resizeCanvas = () => {
+      // Calculate the maximum size that fits in the window while maintaining 16:9 aspect ratio
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+
+      if (width / height > TARGET_ASPECT_RATIO) {
+        // Window is wider than target ratio, constrain by height
+        width = height * TARGET_ASPECT_RATIO;
+      } else {
+        // Window is taller than target ratio, constrain by width
+        height = width / TARGET_ASPECT_RATIO;
+      }
+
+      // Update canvas size
+      this.canvas.width = width;
+      this.canvas.height = height;
+
+      // Update camera
+      this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
-      this.renderer.setSize(this.canvas.width, this.canvas.height);
+
+      // Update renderer
+      this.renderer.setSize(width, height);
+
+      // Update render target
+      this.renderTarget.setSize(width, height);
+
+      // Update scaling factor for mouse position calculations
+      this.scalingFactor = width / window.innerWidth;
+
+      // Update any other size-dependent components
       this.setRayMarchPlaneScale();
-    }, false);
+    };
+
+    /**
+     * Resize event listener
+     */
+    window.addEventListener('resize', () => this.resizeCanvas.bind(this)(), false);
 
     this.canvas.addEventListener('mousemove', (event) => {
       this.mouseX = event.clientX
@@ -458,13 +485,13 @@ export default class ThreeJsDraft {
     );
   }
 
-  animate() {   
+  animate() {
     if (Date.now() - this.lastFrameTime < 1000 / this.framesPerSecond) {
       this.lastFrameTime = Date.now();
       window.requestAnimationFrame(this.animate.bind(this));
       return;
     }
-    
+
     this.world.step();
 
     // Update texture with current balls position
@@ -506,13 +533,40 @@ export default class ThreeJsDraft {
  */
 // eslint-disable-next-line no-new
 function initBubbles() {
-  const canvas = document.getElementById('bubbles');
-  if (canvas) {
-    console.log('Initializing bubbles with canvas:', canvas);
-    window.ThreeJsDraft = new ThreeJsDraft();
-  } else {
-    console.error('Canvas #bubbles not found');
-  }
+  setTimeout(() => {
+    // add a canvas element to the body
+    const canvas = document.createElement('canvas');
+
+    // Calculate the maximum size that fits in the window while maintaining 16:9 aspect ratio
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    if (width / height > TARGET_ASPECT_RATIO) {
+      // Window is wider than target ratio, constrain by height
+      width = height * TARGET_ASPECT_RATIO;
+    } else {
+      // Window is taller than target ratio, constrain by width
+      height = width / TARGET_ASPECT_RATIO;
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    canvas.id = 'bubbles';
+    canvas.style.position = 'absolute';
+    canvas.style.top = '50%';
+    canvas.style.left = '50%';
+    canvas.style.transform = 'translate(-50%, -50%)';
+    canvas.style.zIndex = '9999';
+    document.body.appendChild(canvas);
+    document.body.style.overflow = 'hidden';
+
+    if (canvas) {
+      console.log('Initializing bubbles with canvas:', canvas);
+      window.ThreeJsDraft = new ThreeJsDraft(canvas);
+    } else {
+      console.error('Canvas #bubbles not found');
+    }
+  }, 5000);
 }
 
 if (document.readyState === 'loading') {
