@@ -34,8 +34,11 @@ export default class ThreeJsDraft {
     this.videoElement2.play();
 
     // start video from beginning
-    this.videoElement1.currentTime = 0;
-    this.videoElement2.currentTime = 0;
+    this.videoElement1.currentTime = 40.5;
+    this.videoElement2.currentTime = 40.5;
+
+    this.videoElement1.pause();
+    this.videoElement2.pause();
 
     this.debug = false
 
@@ -74,7 +77,7 @@ export default class ThreeJsDraft {
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.renderer.physicallyCorrectLights = true;
-    
+
     /**
       * Rapier
       */
@@ -376,12 +379,13 @@ export default class ThreeJsDraft {
           u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls },
           u_backgroundTexture1: { value: this.bgTexture1 },
           u_backgroundTexture2: { value: this.bgTexture2 },
-          u_roughness: { value: 1 },
+          u_roughness: { value: 2.91 },
           u_reflectionFactor: { value: 1 },
+          u_reflectionReflectionFactor: { value: 0.5 },
+          u_refractionFactor: { value: 0.5 },
           u_transparency: { value: 0 },
           u_saturation: { value: 1.6 },
-          u_ambientOcclusionAttenuation: { value: 1 },
-          u_ior: { value: 1.4 }
+          u_ambientOcclusionAttenuation: { value: 1 }
         };
 
         this.addHelpers()
@@ -426,12 +430,13 @@ export default class ThreeJsDraft {
 
     gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('Logo Balls Radius').onChange(onChange)
     gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('Mouse Balls Radius').onChange(onChange)
-    gui.add(this.uniforms.u_roughness, 'value', 0, 1).step(0.01).name('Roughness');
+    gui.add(this.uniforms.u_roughness, 'value', 0, 10).step(0.01).name('Roughness');
     gui.add(this.uniforms.u_saturation, 'value', 0, 5).step(0.01).name('Saturation');
     gui.add(this.uniforms.u_ambientOcclusionAttenuation, 'value', 0, 2).step(0.01).name('Ambient Occlusion')
     gui.add(this.uniforms.u_transparency, 'value', 0, 1).step(0.01).name('Transparency');
     gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 1).step(0.01).name('Reflection Factor');
-    gui.add(this.uniforms.u_ior, 'value', 1, 2).step(0.01).name('IOR');
+    gui.add(this.uniforms.u_refractionFactor, 'value', 0, 1).step(0.01).name('Refraction Factor');
+    gui.add(this.uniforms.u_reflectionReflectionFactor, 'value', 0, 1).step(0.01).name('Reflection Reflection Factor');
 
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)
