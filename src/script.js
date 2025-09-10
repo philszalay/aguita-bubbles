@@ -17,15 +17,19 @@ export default class ThreeJsDraft {
     /**
      * Variables
     */
-
-    this.scalingFactor = 1
-
     this.canvas = canvas;
 
     // get first to video elements of page
     const videos = document.querySelectorAll('video');
     this.videoElement1 = videos[0];
     this.videoElement2 = videos[1];
+
+    this.videoElement1.setAttribute('crossorigin', 'anonymous');
+    this.videoElement2.setAttribute('crossorigin', 'anonymous');
+
+    this.videoElement1.load();
+    this.videoElement2.load();
+
     // start video from beginning
     this.videoElement1.currentTime = 0;
     this.videoElement2.currentTime = 0;
@@ -53,40 +57,11 @@ export default class ThreeJsDraft {
     /**
      * Renderer
      */
-    this.renderTarget = new THREE.WebGLRenderTarget(this.canvas.width, this.canvas.height);
-
-    // Setup for rendering the low-res result to screen
-    this.fullscreenQuad = new THREE.Mesh(
-      new THREE.PlaneBufferGeometry(2, 2),
-      new THREE.ShaderMaterial({
-        vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = vec4(position.xy, 0.0, 1.0);
-        }
-      `,
-        fragmentShader: `
-        uniform sampler2D tDiffuse;
-        varying vec2 vUv;
-        void main() {
-          gl_FragColor = texture2D(tDiffuse, vUv);
-        }
-      `,
-        uniforms: {
-          tDiffuse: { value: this.renderTarget.texture }
-        }
-      })
-    );
-    this.fullscreenScene = new THREE.Scene();
-    this.fullscreenScene.add(this.fullscreenQuad);
-    this.fullscreenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas
     })
 
-    this.framesPerSecond = 15;
+    this.framesPerSecond = 10;
     this.lastFrameTime = Date.now();
 
     this.renderer.setSize(this.canvas.width, this.canvas.height)
@@ -142,9 +117,6 @@ export default class ThreeJsDraft {
       // Update render target
       this.renderTarget.setSize(width, height);
 
-      // Update scaling factor for mouse position calculations
-      this.scalingFactor = width / window.innerWidth;
-
       // Update any other size-dependent components
       this.setRayMarchPlaneScale();
     };
@@ -162,7 +134,7 @@ export default class ThreeJsDraft {
         (this.mouseX / window.innerWidth) * 2 - 1,
         -(this.mouseY / window.innerHeight) * 2 + 1,
         0
-      ).multiplyScalar(1 / this.scalingFactor)
+      );
 
       mousePosition.unproject(this.camera);
       const dir = mousePosition.sub(this.camera.position).normalize();
@@ -424,7 +396,7 @@ export default class ThreeJsDraft {
         /**
          * Animation Loop
          */
-        this.animate()
+        setInterval(this.animate.bind(this), 1000 / this.framesPerSecond);
       });
   }
 
@@ -496,12 +468,6 @@ export default class ThreeJsDraft {
   }
 
   animate() {
-    if (Date.now() - this.lastFrameTime < 1000 / this.framesPerSecond) {
-      this.lastFrameTime = Date.now();
-      window.requestAnimationFrame(this.animate.bind(this));
-      return;
-    }
-
     this.world.step();
 
     // Update texture with current balls position
@@ -524,17 +490,8 @@ export default class ThreeJsDraft {
     this.sphereTexture.needsUpdate = true;
 
     this.stats.update()
-    // this.renderer.render(this.scene, this.camera)
 
-    // Render to the low-resolution render target
-    this.renderer.setRenderTarget(this.renderTarget);
     this.renderer.render(this.scene, this.camera);
-
-    // Render the low-resolution result to the screen
-    this.renderer.setRenderTarget(null);
-    this.renderer.render(this.fullscreenScene, this.fullscreenCamera);
-
-    window.requestAnimationFrame(this.animate.bind(this));
   }
 }
 
@@ -543,56 +500,56 @@ export default class ThreeJsDraft {
  */
 // eslint-disable-next-line no-new
 function initBubbles() {
-    console.log('Initializing bubbles');
-    
-    // add a canvas element to the body
-    const canvas = document.createElement('canvas');
+  console.log('Initializing bubbles');
 
-    // Calculate the maximum size that fits in the window while maintaining 16:9 aspect ratio
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+  // add a canvas element to the body
+  const canvas = document.createElement('canvas');
 
-    if (width / height > TARGET_ASPECT_RATIO) {
-      // Window is wider than target ratio, constrain by height
-      width = height * TARGET_ASPECT_RATIO;
-    } else {
-      // Window is taller than target ratio, constrain by width
-      height = width / TARGET_ASPECT_RATIO;
-    }
+  // Calculate the maximum size that fits in the window while maintaining 16:9 aspect ratio
+  let width = window.innerWidth;
+  let height = window.innerHeight;
 
-    canvas.width = width;
-    canvas.height = height;
-    canvas.id = 'bubbles';
-    canvas.style.position = 'absolute';
-    canvas.style.top = '50%';
-    canvas.style.left = '50%';
-    canvas.style.transform = 'translate(-50%, -50%)';
-    canvas.style.zIndex = '9999';
-    document.body.appendChild(canvas);
-    document.body.style.overflow = 'hidden';
+  if (width / height > TARGET_ASPECT_RATIO) {
+    // Window is wider than target ratio, constrain by height
+    width = height * TARGET_ASPECT_RATIO;
+  } else {
+    // Window is taller than target ratio, constrain by width
+    height = width / TARGET_ASPECT_RATIO;
+  }
 
-    if (canvas) {
-      console.log('Initializing bubbles with canvas:', canvas);
-      window.ThreeJsDraft = new ThreeJsDraft(canvas);
-    } else {
-      console.error('Canvas #bubbles not found');
-    }
+  canvas.width = width;
+  canvas.height = height;
+  canvas.id = 'bubbles';
+  canvas.style.position = 'absolute';
+  canvas.style.top = '50%';
+  canvas.style.left = '50%';
+  canvas.style.transform = 'translate(-50%, -50%)';
+  canvas.style.zIndex = '9999';
+  document.body.appendChild(canvas);
+  document.body.style.overflow = 'hidden';
+
+  if (canvas) {
+    console.log('Initializing bubbles with canvas:', canvas);
+    window.ThreeJsDraft = new ThreeJsDraft(canvas);
+  } else {
+    console.error('Canvas #bubbles not found');
+  }
 }
 
 function checkVideosAndInit() {
   const videos = document.querySelectorAll('video');
-  
+
   // If no videos found, check again after a delay
   if (!videos || videos.length === 0) {
     console.log('No videos found yet, checking again in 500ms');
     setTimeout(checkVideosAndInit, 50);
     return;
   }
-  
+
   let loadedCount = 0;
   const totalVideos = videos.length;
   console.log(`Found ${totalVideos} videos, checking load status...`);
-  
+
   // Function to check if all videos are loaded
   const checkAllLoaded = () => {
     loadedCount++;
@@ -602,14 +559,14 @@ function checkVideosAndInit() {
       initBubbles();
     }
   };
-  
+
   // Add event listeners to all videos
   videos.forEach(video => {
     if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
       checkAllLoaded();
     } else {
       video.addEventListener('canplay', checkAllLoaded, { once: true });
-      
+
       // Fallback if video fails to load
       video.addEventListener('error', () => {
         console.warn('Video failed to load, continuing anyway');
@@ -617,7 +574,7 @@ function checkVideosAndInit() {
       }, { once: true });
     }
   });
-  
+
   // Set a timeout as a fallback in case videos never load
   setTimeout(() => {
     if (loadedCount < totalVideos) {

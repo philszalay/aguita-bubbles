@@ -11,22 +11,10 @@ body {
     background-color: black;
 }
 
-#resolution-button {
-    position: absolute;
-    top: 50px;
+video {
+    display: none;
 }
 
-.webgl {
-    /* cursor: none !important; */
-}
-
-.footer {
-    display: flex;
-    flex-direction: row-reverse;
-    z-index: 1;
-    position: fixed;
-    right: 1em;
-    bottom: 1em;
-    width: 100%;
-    color: white;
+.dg.ac {
+    z-index: 10000 !important;
 }

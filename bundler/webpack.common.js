@@ -109,6 +109,22 @@ module.exports = (env, argv) => {
           {
             test: /\.wav$/,
             loader: 'file-loader'
+          },
+
+          // Videos
+          {
+            test: /\.(mp4|webm|ogg|avi|mov)$/,
+            use:
+              [
+                {
+                  loader: 'file-loader',
+                  options:
+                  {
+                    outputPath: 'assets/videos/',
+                    name: '[name].[ext]'
+                  }
+                }
+              ]
           }
         ]
     }
