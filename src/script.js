@@ -379,7 +379,6 @@ export default class ThreeJsDraft {
           u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls },
           u_backgroundTexture1: { value: this.bgTexture1 },
           u_backgroundTexture2: { value: this.bgTexture2 },
-          u_roughness: { value: 2.91 },
           u_reflectionFactor: { value: 1 },
           u_reflectionReflectionFactor: { value: 0.5 },
           u_refractionFactor: { value: 0.5 },
@@ -430,13 +429,11 @@ export default class ThreeJsDraft {
 
     gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('Logo Balls Radius').onChange(onChange)
     gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('Mouse Balls Radius').onChange(onChange)
-    gui.add(this.uniforms.u_roughness, 'value', 0, 10).step(0.01).name('Roughness');
     gui.add(this.uniforms.u_saturation, 'value', 0, 5).step(0.01).name('Saturation');
     gui.add(this.uniforms.u_ambientOcclusionAttenuation, 'value', 0, 2).step(0.01).name('Ambient Occlusion')
     gui.add(this.uniforms.u_transparency, 'value', 0, 1).step(0.01).name('Transparency');
-    gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 1).step(0.01).name('Reflection Factor');
     gui.add(this.uniforms.u_refractionFactor, 'value', 0, 1).step(0.01).name('Refraction Factor');
-    gui.add(this.uniforms.u_reflectionReflectionFactor, 'value', 0, 1).step(0.01).name('Reflection Reflection Factor');
+    gui.add(this.uniforms.u_reflectionReflectionFactor, 'value', 0, 1).step(0.01).name('ReflectionReflection Factor');
 
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)

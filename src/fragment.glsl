@@ -26,7 +26,6 @@ uniform sampler2D u_envMap;
 uniform float u_transparency;
 uniform float u_reflectionReflectionFactor;
 uniform float u_refractionFactor;
-uniform float u_roughness;
 
 // Smooth minimum function for metaballs
 float smin(float a, float b, float k) {
@@ -73,6 +72,18 @@ vec3 normal(vec3 p) {
 	));
 }
 
+float fresnel(vec3 direction, vec3 normal, bool invert) {
+    vec3 nDirection = normalize( direction );
+    vec3 nNormal = normalize( normal );
+    vec3 halfDirection = normalize( nNormal + nDirection );
+    
+    float cosine = dot( halfDirection, nDirection );
+    float product = max( cosine, 0.0 );
+    float factor = invert ? 1.0 - pow( product, 3.0 ) : pow( product, 3.0 );
+
+    return factor;
+}
+
 void main() {
 	vec2 uv = vUv.xy;
 	
@@ -100,31 +111,12 @@ void main() {
 
 	// Simple glass effect
 	vec3 reflectDir = reflect(rd, n);
-
-	// Add roughness using fresnel-based approach
-	if(u_roughness > 0.0) {
-		// Use view angle to modulate roughness effect
-		float viewAngle = abs(dot(-rd, n));
-		float roughnessFactor = u_roughness * (1.0 - viewAngle * 0.5);
-		
-		// Smooth perturbation based on surface curvature
-		vec3 perturbation = n * roughnessFactor * 0.1;
-		reflectDir = normalize(mix(reflectDir, reflectDir + perturbation, roughnessFactor));
-	}
 	
 	// Sample environment map for reflection
 	vec3 reflectionColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
 	
 	// Calculate refraction direction
 	vec3 refractDir = refract(rd, n, 1.0 / 1.4); // Air to water (IOR ~1.4)
-	
-	// Add subtle roughness to refraction
-	if(u_roughness > 0.0 && length(refractDir) > 0.0) {
-		float viewAngle = abs(dot(-rd, n));
-		float refractionRoughness = u_roughness * 0.3 * (1.0 - viewAngle);
-		vec3 perturbation = n * refractionRoughness * 0.05;
-		refractDir = normalize(mix(refractDir, refractDir + perturbation, refractionRoughness));
-	}
 	
 	// Sample background with refracted direction
 	vec2 refractedUV = uv;
@@ -137,8 +129,8 @@ void main() {
 
 	vec3 refractionColor = texture(u_backgroundTexture2, refractedUV).rgb;
 	
-	// Simple fresnel approximation
-	float fresnel = pow(1.0 - max(dot(-rd, n), 0.0), 3.0);
+    // Calculate Fresnel factor
+	float fresnel = fresnel(rd, n, false);
 	
 	// Mix reflection and refraction
 	vec3 glassColor = mix(refractionColor, reflectionColor, fresnel * u_reflectionReflectionFactor);
