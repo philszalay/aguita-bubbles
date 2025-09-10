@@ -37,8 +37,8 @@ export default class ThreeJsDraft {
     this.videoElement1.currentTime = 40.5;
     this.videoElement2.currentTime = 40.5;
 
-    this.videoElement1.pause();
-    this.videoElement2.pause();
+    // this.videoElement1.pause();
+    // this.videoElement2.pause();
 
     this.debug = false
 
@@ -73,10 +73,6 @@ export default class ThreeJsDraft {
     this.lastFrameTime = Date.now();
 
     this.renderer.setSize(this.canvas.width, this.canvas.height)
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
-    this.renderer.outputEncoding = THREE.sRGBEncoding;
-    this.renderer.physicallyCorrectLights = true;
 
     /**
       * Rapier

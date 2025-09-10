@@ -27,6 +27,9 @@ uniform float u_transparency;
 uniform float u_reflectionReflectionFactor;
 uniform float u_refractionFactor;
 
+// Color properties
+uniform float u_saturation;
+
 // Smooth minimum function for metaballs
 float smin(float a, float b, float k) {
 	float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
@@ -84,6 +87,15 @@ float fresnel(vec3 direction, vec3 normal, bool invert) {
     return factor;
 }
 
+// Adjust saturation of a color
+vec3 adjustSaturation(vec3 color, float saturation) {
+    // Calculate luminance using standard weights
+    float luminance = dot(color, vec3(0.299, 0.587, 0.114));
+    
+    // Mix between grayscale and original color based on saturation
+    return mix(vec3(luminance), color, saturation);
+}
+
 void main() {
 	vec2 uv = vUv.xy;
 	
@@ -137,6 +149,9 @@ void main() {
 	
 	// Apply transparency
 	vec3 finalColor = mix(glassColor, backgroundColor2, u_transparency);
+	
+	// Apply saturation adjustment
+	finalColor = adjustSaturation(finalColor, u_saturation);
 	
 	gl_FragColor = vec4(finalColor, 1.0);
 }
