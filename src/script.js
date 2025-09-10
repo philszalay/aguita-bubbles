@@ -30,22 +30,25 @@ export default class ThreeJsDraft {
     this.videoElement1.load();
     this.videoElement2.load();
 
+    this.videoElement1.play();
+    this.videoElement2.play();
+
     // start video from beginning
     this.videoElement1.currentTime = 0;
     this.videoElement2.currentTime = 0;
 
     this.debug = false
 
-    this.bubbleColor = new THREE.Color(0xffffff)
-
     /**
      * Scene
      */
     this.scene = new THREE.Scene()
 
+    /**
+     * Mouse
+     */
     this.mouseX = 0
     this.mouseY = 0
-
     this.mousePosition = new THREE.Vector3(0, 0, 0)
 
     /**
@@ -57,23 +60,21 @@ export default class ThreeJsDraft {
     /**
      * Renderer
      */
+    this.renderTarget = new THREE.WebGLRenderTarget(this.canvas.width, this.canvas.height);
+
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas
-    })
+    });
 
-    this.framesPerSecond = 10;
+    this.framesPerSecond = 30;
     this.lastFrameTime = Date.now();
 
     this.renderer.setSize(this.canvas.width, this.canvas.height)
-    this.renderer.setPixelRatio(1)
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.renderer.physicallyCorrectLights = true;
-
-    this.backgroundColor = new THREE.Color(0x50a9df);
-    this.renderer.setClearColor(this.backgroundColor, 1);
-
+    
     /**
       * Rapier
       */
@@ -166,7 +167,7 @@ export default class ThreeJsDraft {
 
   async initRapier() {
     await RAPIER.init();
-    const gravity = { x: 0.0, y: 0, z: 0.0 };
+    const gravity = { x: 0, y: 0, z: 0 };
     this.world = new RAPIER.World(gravity);
 
     /**
@@ -353,6 +354,13 @@ export default class ThreeJsDraft {
         this.material = new THREE.ShaderMaterial();
         this.rayMarchPlane = new THREE.Mesh(geometry, this.material)
 
+        // Create background plane
+        const backgroundGeometry = new THREE.PlaneGeometry();
+        const backgroundMaterial = new THREE.MeshBasicMaterial({
+          map: this.bgTexture1,
+          transparent: false
+        });
+
         this.setRayMarchPlaneScale();
 
         this.uniforms = {
@@ -368,7 +376,6 @@ export default class ThreeJsDraft {
           u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls },
           u_backgroundTexture1: { value: this.bgTexture1 },
           u_backgroundTexture2: { value: this.bgTexture2 },
-          u_bubbleColor: { value: this.bubbleColor },
           u_roughness: { value: 1 },
           u_reflectionFactor: { value: 1 },
           u_transparency: { value: 0 },

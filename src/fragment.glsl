@@ -16,8 +16,6 @@ uniform sampler2D u_backgroundTexture1;
 uniform sampler2D u_backgroundTexture2;
 uniform float u_ior;
 
-uniform vec3 u_bubbleColor;
-
 uniform float u_reflectionFactor;
 uniform float u_transparency;
 uniform float u_roughness;
@@ -161,10 +159,6 @@ void main() {
 
     // Mix reflection and refraction based on Fresnel
 	vec3 glassColor = mix(refractionColor, reflectionColor, fresnelFactor * u_reflectionFactor);
-
-    // Add slight tint (optional)
-	vec3 glassTint = u_bubbleColor;
-	glassColor = mix(glassColor, glassColor * glassTint, 0.1);
 
     // Apply transparency
 	vec3 finalColor = mix(glassColor, backgroundColor2, u_transparency);
