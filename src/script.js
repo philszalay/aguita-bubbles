@@ -9,6 +9,7 @@ import logoCoordinates from './logoCoordinates.txt'
 import RAPIER from '@dimforge/rapier3d-compat';
 import { GUI } from 'dat.gui'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import hdr from './main.hdr';
 
 const TARGET_ASPECT_RATIO = 1920 / 1080;
 
@@ -37,8 +38,8 @@ export default class ThreeJsDraft {
     this.videoElement1.currentTime = 40.5;
     this.videoElement2.currentTime = 40.5;
 
-    // this.videoElement1.pause();
-    // this.videoElement2.pause();
+    this.videoElement1.pause();
+    this.videoElement2.pause();
 
     this.debug = false
 
@@ -84,7 +85,14 @@ export default class ThreeJsDraft {
 
     this.radiusValues = {
       textSpheresRadius: { value: 0.025 },
-      ballSpheresRadius: { value: 0.1 }
+      ballSpheresRadius: { value: 0.13 }
+    }
+
+    this.physicsParams = {
+      dampingMultiplier: 150000,
+      baseForceMagnitude: 0.0001,
+      baseDamping: 15,
+      baseForce: 0.01
     }
 
     /**
@@ -180,7 +188,7 @@ export default class ThreeJsDraft {
     const density = radius;
 
     // Adjust damping based on radius (smaller balls have less damping)
-    const damping = radius * 1000000;
+    const damping = radius * this.physicsParams.dampingMultiplier;
 
     const initialPosition = gravitationCenter;
 
@@ -219,15 +227,17 @@ export default class ThreeJsDraft {
     function update() {
       rigid.resetForces(true);
 
+      // Update damping based on current GUI value
+      const currentDamping = radius * this.physicsParams.dampingMultiplier;
+      rigid.setLinearDamping(currentDamping);
+
       const { x, y, z } = rigid.translation();
 
       const pos = new THREE.Vector3(x, y, z);
 
       const dir = gravitationCenter.clone().sub(pos);
 
-      const baseForceMagnitude = 0.0001;
-
-      const forceMagnitude = baseForceMagnitude * radius;
+      const forceMagnitude = this.physicsParams.baseForceMagnitude * radius;
 
       const force = dir.normalize().multiplyScalar(forceMagnitude);
       rigid.addForce(force, true);
@@ -244,9 +254,6 @@ export default class ThreeJsDraft {
     const minSize = 0.03;
     const maxSize = 0.05;
     const size = minSize + Math.random() * (maxSize - minSize);
-
-    const baseDamping = 15;
-    const baseForce = 0.03;
 
     const density = size;
 
@@ -279,7 +286,7 @@ export default class ThreeJsDraft {
     wireMesh.scale.setScalar(1.01);
     mesh.add(wireMesh);
 
-    function update(index) {
+    function update() {
       rigid.resetForces(true);
 
       const { x, y, z } = rigid.translation();
@@ -291,24 +298,15 @@ export default class ThreeJsDraft {
 
       const distance = dir.length(); // Calculate the distance
 
-      // let falloff = index === 0 || index === 1 || index === 2 ? 1 : 3 * Math.exp(-distance);
-
-      // let falloff = index === 0 || index === 1 || index === 2 ? 1 : 1 * Math.exp(-distance * 0.5);
-
-      let gravitationFieldFactor;
-
-      gravitationFieldFactor = Math.exp(-distance);
+      const gravitationFieldFactor = Math.exp(-distance);
 
       if (gravitationFieldFactor < 0.05) {
         gravitationFieldFactor = 0;
       }
 
-      const forceValue = gravitationFieldFactor * baseForce * size
+      const forceValue = gravitationFieldFactor * this.physicsParams.baseForce * size;
 
-      // const dampingFactor = 1 / distance; // Increase damping as the distance decreases
-      // console.log(dampingFactor);
-
-      rigid.setLinearDamping(baseDamping);
+      rigid.setLinearDamping(this.physicsParams.baseDamping);
 
       // Apply force based on direction and falloff (scaled force)
       const force = dir.normalize().multiplyScalar(forceValue); // Adjust the base force as needed
@@ -337,14 +335,14 @@ export default class ThreeJsDraft {
 
     new RGBELoader(this.loadingManager)
       .setDataType(THREE.FloatType)
-      .load('https://cdn.jsdelivr.net/gh/philszalay/aguita-bubbles@squarespace_integration/src/main.hdr', (hdrEquirect) => {
-        // Apply environment map to the scene for lighting and reflections
-        hdrEquirect.mapping = THREE.EquirectangularReflectionMapping;
-        this.scene.environment = hdrEquirect; // Set HDRI as environment map
-        this.scene.background = hdrEquirect; // Optional: Set HDRI as background
-
+      .load(hdr, (hdrEquirect) => {
         this.bgTexture1 = new THREE.VideoTexture(this.videoElement1);
         this.bgTexture2 = new THREE.VideoTexture(this.videoElement2);
+
+        hdrEquirect = pmremGenerator.fromEquirectangular(hdrEquirect).texture;
+
+        hdrEquirect.dispose(); // sparen
+        pmremGenerator.dispose();
 
         this.createSphereTexture()
 
@@ -352,13 +350,6 @@ export default class ThreeJsDraft {
         const geometry = new THREE.PlaneGeometry();
         this.material = new THREE.ShaderMaterial();
         this.rayMarchPlane = new THREE.Mesh(geometry, this.material)
-
-        // Create background plane
-        const backgroundGeometry = new THREE.PlaneGeometry();
-        const backgroundMaterial = new THREE.MeshBasicMaterial({
-          map: this.bgTexture1,
-          transparent: false
-        });
 
         this.setRayMarchPlaneScale();
 
@@ -376,11 +367,10 @@ export default class ThreeJsDraft {
           u_backgroundTexture1: { value: this.bgTexture1 },
           u_backgroundTexture2: { value: this.bgTexture2 },
           u_reflectionFactor: { value: 1 },
-          u_reflectionReflectionFactor: { value: 0.5 },
+          u_reflectionReflectionFactor: { value: 1 },
           u_refractionFactor: { value: 0.5 },
           u_transparency: { value: 0 },
-          u_saturation: { value: 1.6 },
-          u_ambientOcclusionAttenuation: { value: 1 }
+          u_saturation: { value: 1.6 }
         };
 
         this.addHelpers()
@@ -426,10 +416,15 @@ export default class ThreeJsDraft {
     gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('Logo Balls Radius').onChange(onChange)
     gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('Mouse Balls Radius').onChange(onChange)
     gui.add(this.uniforms.u_saturation, 'value', 0, 5).step(0.01).name('Saturation');
-    gui.add(this.uniforms.u_ambientOcclusionAttenuation, 'value', 0, 2).step(0.01).name('Ambient Occlusion')
     gui.add(this.uniforms.u_transparency, 'value', 0, 1).step(0.01).name('Transparency');
     gui.add(this.uniforms.u_refractionFactor, 'value', 0, 1).step(0.01).name('Refraction Factor');
-    gui.add(this.uniforms.u_reflectionReflectionFactor, 'value', 0, 1).step(0.01).name('ReflectionReflection Factor');
+    gui.add(this.uniforms.u_reflectionReflectionFactor, 'value', 0, 3).step(0.01).name('Reflection Factor');
+
+    // Physics parameters
+    gui.add(this.physicsParams, 'dampingMultiplier', 10, 2000000).step(10).name('Damping ↓');
+    gui.add(this.physicsParams, 'baseForceMagnitude', 0.00001, 0.0005).step(0.000001).name('Magnitude');
+    gui.add(this.physicsParams, 'baseDamping', 1, 50).step(1).name('Base Damping');
+    gui.add(this.physicsParams, 'baseForce', 0.0001, 0.05).step(0.0001).name('Mouse Force');
 
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)
@@ -505,8 +500,6 @@ export default class ThreeJsDraft {
  */
 // eslint-disable-next-line no-new
 function initBubbles() {
-  console.log('Initializing bubbles');
-
   // add a canvas element to the body
   const canvas = document.createElement('canvas');
 
