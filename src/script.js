@@ -22,8 +22,13 @@ export default class ThreeJsDraft {
 
     this.canvas = canvas;
 
-    this.videoElement = document.querySelector('video');
-    this.videoElement.play();
+    // get first to video elements of page
+    const videos = document.querySelectorAll('video');
+    this.videoElement1 = videos[0];
+    this.videoElement2 = videos[1];
+    // start video from beginning
+    this.videoElement1.currentTime = 0;
+    this.videoElement2.currentTime = 0;
 
     this.debug = false
 
@@ -366,7 +371,8 @@ export default class ThreeJsDraft {
         this.scene.environment = hdrEquirect; // Set HDRI as environment map
         this.scene.background = hdrEquirect; // Optional: Set HDRI as background
 
-        this.bgTexture = new THREE.VideoTexture(this.videoElement);
+        this.bgTexture1 = new THREE.VideoTexture(this.videoElement1);
+        this.bgTexture2 = new THREE.VideoTexture(this.videoElement2);
 
         this.createSphereTexture()
 
@@ -388,13 +394,15 @@ export default class ThreeJsDraft {
           u_sphereKValues: { value: this.sphereKValues },
           u_sphereTexture: { value: this.sphereTexture },
           u_numSpheres: { value: this.sphereCoordinates.length + this.numBalls },
-          u_backgroundTexture: { value: this.bgTexture },
+          u_backgroundTexture1: { value: this.bgTexture1 },
+          u_backgroundTexture2: { value: this.bgTexture2 },
           u_bubbleColor: { value: this.bubbleColor },
-          u_roughness: { value: 0.7 },
-          u_reflectionFactor: { value: 0.02 },
+          u_roughness: { value: 1 },
+          u_reflectionFactor: { value: 1 },
           u_transparency: { value: 0 },
-          u_saturation: { value: 2 },
-          u_ambientOcclusionAttenuation: { value: 0.8 }
+          u_saturation: { value: 1.6 },
+          u_ambientOcclusionAttenuation: { value: 1 },
+          u_ior: { value: 1.4 }
         };
 
         this.addHelpers()
@@ -439,10 +447,12 @@ export default class ThreeJsDraft {
 
     gui.add(this.radiusValues.textSpheresRadius, 'value', 0.005, 0.05).step(0.005).name('Logo Balls Radius').onChange(onChange)
     gui.add(this.radiusValues.ballSpheresRadius, 'value', 0.05, 0.2).step(0.01).name('Mouse Balls Radius').onChange(onChange)
-    // gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 1).step(0.01).name('Reflection');
     gui.add(this.uniforms.u_roughness, 'value', 0, 1).step(0.01).name('Roughness');
     gui.add(this.uniforms.u_saturation, 'value', 0, 5).step(0.01).name('Saturation');
-    gui.add(this.uniforms.u_ambientOcclusionAttenuation, 'value', 0, 1).step(0.01).name('Ambient Occlusion');
+    gui.add(this.uniforms.u_ambientOcclusionAttenuation, 'value', 0, 2).step(0.01).name('Ambient Occlusion')
+    gui.add(this.uniforms.u_transparency, 'value', 0, 1).step(0.01).name('Transparency');
+    gui.add(this.uniforms.u_reflectionFactor, 'value', 0, 1).step(0.01).name('Reflection Factor');
+    gui.add(this.uniforms.u_ior, 'value', 1, 2).step(0.01).name('IOR');
 
     this.stats = Stats()
     document.body.appendChild(this.stats.dom)
@@ -533,7 +543,8 @@ export default class ThreeJsDraft {
  */
 // eslint-disable-next-line no-new
 function initBubbles() {
-  setTimeout(() => {
+    console.log('Initializing bubbles');
+    
     // add a canvas element to the body
     const canvas = document.createElement('canvas');
 
@@ -566,11 +577,58 @@ function initBubbles() {
     } else {
       console.error('Canvas #bubbles not found');
     }
-  }, 5000);
+}
+
+function checkVideosAndInit() {
+  const videos = document.querySelectorAll('video');
+  
+  // If no videos found, check again after a delay
+  if (!videos || videos.length === 0) {
+    console.log('No videos found yet, checking again in 500ms');
+    setTimeout(checkVideosAndInit, 50);
+    return;
+  }
+  
+  let loadedCount = 0;
+  const totalVideos = videos.length;
+  console.log(`Found ${totalVideos} videos, checking load status...`);
+  
+  // Function to check if all videos are loaded
+  const checkAllLoaded = () => {
+    loadedCount++;
+    console.log(`Video loaded: ${loadedCount}/${totalVideos}`);
+    if (loadedCount === totalVideos) {
+      console.log('All videos loaded, initializing bubbles');
+      initBubbles();
+    }
+  };
+  
+  // Add event listeners to all videos
+  videos.forEach(video => {
+    if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
+      checkAllLoaded();
+    } else {
+      video.addEventListener('canplay', checkAllLoaded, { once: true });
+      
+      // Fallback if video fails to load
+      video.addEventListener('error', () => {
+        console.warn('Video failed to load, continuing anyway');
+        checkAllLoaded();
+      }, { once: true });
+    }
+  });
+  
+  // Set a timeout as a fallback in case videos never load
+  setTimeout(() => {
+    if (loadedCount < totalVideos) {
+      console.warn('Timeout reached waiting for videos, initializing bubbles anyway');
+      initBubbles();
+    }
+  }, 10000); // 10 second timeout
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initBubbles);
+  document.addEventListener('DOMContentLoaded', checkVideosAndInit);
 } else {
-  initBubbles();
+  checkVideosAndInit();
 }

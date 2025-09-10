@@ -12,7 +12,9 @@ uniform int u_numSpheres;
 uniform float u_sphereKValues[158];
 uniform sampler2D u_sphereTexture;
 uniform sampler2D u_envMap;
-uniform sampler2D u_backgroundTexture;
+uniform sampler2D u_backgroundTexture1;
+uniform sampler2D u_backgroundTexture2;
+uniform float u_ior;
 
 uniform vec3 u_bubbleColor;
 
@@ -107,7 +109,9 @@ void main() {
 	vec3 rd = normalize((u_camInvProjMat * vec4(uv * 2. - 1., 0, 1)).xyz);
 	rd = (u_camToWorldMat * vec4(rd, 0)).xyz;
 
-	vec3 backgroundColor = texture(u_backgroundTexture, uv).rgb;
+	vec3 backgroundColor = texture(u_backgroundTexture1, uv).rgb;
+	vec3 backgroundColor2 = texture(u_backgroundTexture2, uv).rgb;
+
 	float dist = rayMarch(ro, rd);
 
 	if(dist >= u_maxDis) {
@@ -119,22 +123,21 @@ void main() {
 	vec3 n = normal(hitPos);
 
     // Glass properties
-	float ior = 1.5; // Index of refraction for glass
-	float eta = 1.0 / ior; // Air to glass ratio
+	float eta = 1.0 / u_ior; // Air to glass ratio
 
     // Calculate reflection and refraction directions
 	vec3 reflectDir = reflect(rd, n);
 	vec3 refractDir = refract2(rd, n, eta);
 
     // Fresnel effect (stronger for glass)
-	float F0 = pow((1.0 - ior) / (1.0 + ior), 2.0);
+	float F0 = pow((1.0 - u_ior) / (1.0 + u_ior), 2.0);
 	float fresnelFactor = fresnel(max(dot(-rd, n), 0.0), F0);
 
     // Sample environment for reflection
 	vec3 reflectionColor = texture(u_envMap, reflectDir.xy * 0.5 + 0.5).rgb;
 
     // Sample background through refraction
-	vec3 refractionColor = backgroundColor;
+	vec3 refractionColor = backgroundColor2;
 	if(length(refractDir) > 0.0) {
         // March through the glass to find exit point
 		vec3 refractRo = hitPos + refractDir * u_eps * 2.0;
@@ -145,26 +148,26 @@ void main() {
 			vec3 exitNormal = -normal(exitPos); // Flip normal for exit
 
             // Refract again when exiting glass
-			vec3 finalRefractDir = refract2(refractDir, exitNormal, ior);
+			vec3 finalRefractDir = refract2(refractDir, exitNormal, u_ior);
 			if(length(finalRefractDir) > 0.0) {
                 // Calculate distorted UV coordinates
 				vec3 projectedPos = exitPos + finalRefractDir * 0.1;
 				vec2 distortedUV = uv + (projectedPos.xy - hitPos.xy) * 0.1;
 				distortedUV = clamp(distortedUV, 0.0, 1.0);
-				refractionColor = texture(u_backgroundTexture, distortedUV).rgb;
+				refractionColor = texture(u_backgroundTexture2, distortedUV).rgb;
 			}
 		}
 	}
 
     // Mix reflection and refraction based on Fresnel
-	vec3 glassColor = mix(refractionColor, reflectionColor, fresnelFactor);
+	vec3 glassColor = mix(refractionColor, reflectionColor, fresnelFactor * u_reflectionFactor);
 
     // Add slight tint (optional)
 	vec3 glassTint = u_bubbleColor;
 	glassColor = mix(glassColor, glassColor * glassTint, 0.1);
 
     // Apply transparency
-	vec3 finalColor = mix(glassColor, backgroundColor, u_transparency);
+	vec3 finalColor = mix(glassColor, backgroundColor2, u_transparency);
 
     // Apply ambient occlusion (lighter for glass)
 	float ao = ambientOcclusion(hitPos, n);

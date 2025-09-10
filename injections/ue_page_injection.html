@@ -1,0 +1,117 @@
+<div style="font-size: 20px; text-align: center; display: flex; align-items: center; flex-direction: column;">
+    <div style="display: flex; justify-content: space-around; width: 100%; margin-bottom: 5em;">
+        <div style="cursor: pointer;" id="1">
+            Cajas Del Mar
+        </div>
+        <div style="cursor: pointer;" id="2">
+            Javier James
+        </div>
+        <div style="cursor: pointer;" id="3">
+            Llanto Vaquero
+        </div>
+        <div style="cursor: pointer;" id="4">
+            Miguel Casco
+        </div>
+        <div style="cursor: pointer;" id="5">
+            Gibrán Turón
+        </div>
+    </div>
+    <div>
+        <div style="margin-bottom: 2em;">
+            Ü is an annual art show curated by Agüita and Selector María José González, showcasing artists from a wide
+            range of multicultural backgrounds.
+        </div>
+        <div>
+            Its mission is to create a platform for foreign artists in the U.S., offering them a space to share
+            their work and perspectives. Presented as a pop-up exhibition, each edition also lives on in our virtual
+            gallery, where it can be explored anytime.
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Get the name elements by id 1..5
+        const nameEls = [];
+        for (let i = 1; i <= 5; i++) {
+            const el = document.getElementById(String(i));
+            if (el) {
+                nameEls.push(el);
+            }
+        }
+
+        // List of all images on the current page (in DOM order)
+        const images = Array.from(document.querySelectorAll('figure'));
+
+        console.log("FIGURE", images);
+
+        // Track current selection
+        let selectedIndex = null;
+
+        function clearSelection() {
+            nameEls.forEach(el => el.classList.remove('heavy-font'));
+        }
+
+        function showAllImages() {
+            images.forEach(img => {
+                img.style.display = ''; // reset inline style
+            });
+        }
+
+        function showOnlyImageRange(startIndex, count) {
+            console.log("START", startIndex);
+            console.log("COUNT", count);
+            console.log("IMAGES", images);
+            // First hide all images
+            images.forEach(img => {
+                img.style.setProperty('display', 'none', 'important');
+            });
+
+            // Then show only the specified range
+            for (let i = startIndex; i < startIndex + count && i < images.length; i++) {
+                images[i].style.display = '';
+            }
+        }
+
+        nameEls.forEach((el, idx) => {
+            el.addEventListener('click', () => {
+                if (selectedIndex === idx) {
+                    // Clicking the same name again → deselect
+                    clearSelection();
+                    showAllImages();
+                    selectedIndex = null;
+                } else {
+                    // New selection
+                    clearSelection();
+                    el.classList.add('heavy-font');
+
+                    showAllImages();
+
+                    // Show only specific image ranges based on selection
+                    switch (idx) {
+                        case 0: // Cajas Del Mar - show only first 5 images
+                            showOnlyImageRange(0, 5);
+                            break;
+                        case 1: // Javier James - show only next 12 images
+                            showOnlyImageRange(5, 12);
+                            break;
+                        case 2: // Llanto Vaquero - show only next 16 images
+                            showOnlyImageRange(17, 16);
+                            break;
+                        case 3: // Miguel Casco - show only next 9 images
+                            showOnlyImageRange(33, 9);
+                            break;
+                        case 4: // Gibrán Turón - show only last 10 images
+                            // Assuming we know the total number of images
+                            if (images.length >= 10) {
+                                showOnlyImageRange(images.length - 10, 10);
+                            }
+                            break;
+                    }
+
+                    selectedIndex = idx;
+                }
+            });
+        });
+    });
+</script>
