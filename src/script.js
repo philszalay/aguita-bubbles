@@ -19,29 +19,30 @@ export default class ThreeJsDraft {
      * Variables
     */
     this.canvas = canvas;
+    this.overlayButtons = [];
+
+    this.debug = false
+    this.localDev = true;
 
     // get first to video elements of page
     const videos = document.querySelectorAll('video');
     this.videoElement1 = videos[0];
     this.videoElement2 = videos[1];
 
-    this.videoElement1.setAttribute('crossorigin', 'anonymous');
-    this.videoElement2.setAttribute('crossorigin', 'anonymous');
+    if (this.localDev) {
+      this.videoElement1.setAttribute('crossorigin', 'anonymous');
+      this.videoElement2.setAttribute('crossorigin', 'anonymous');
 
-    this.videoElement1.load();
-    this.videoElement2.load();
+      this.videoElement1.load();
+      this.videoElement2.load();
 
-    this.videoElement1.play();
-    this.videoElement2.play();
+      this.videoElement1.play();
+      this.videoElement2.play();
+    }
 
     // start video from beginning
-    this.videoElement1.currentTime = 40.5;
-    this.videoElement2.currentTime = 40.5;
-
-    this.videoElement1.pause();
-    this.videoElement2.pause();
-
-    this.debug = false
+    this.videoElement1.currentTime = 0;
+    this.videoElement2.currentTime = 0;
 
     /**
      * Scene
@@ -132,7 +133,10 @@ export default class ThreeJsDraft {
     /**
      * Resize event listener
      */
-    window.addEventListener('resize', () => this.resizeCanvas.bind(this)(), false);
+    window.addEventListener('resize', () => {
+      this.resizeCanvas.bind(this)();
+      this.positionAllButtons();
+    }, false);
 
     this.canvas.addEventListener('mousemove', (event) => {
       this.mouseX = event.clientX
@@ -335,7 +339,7 @@ export default class ThreeJsDraft {
 
     new RGBELoader(this.loadingManager)
       .setDataType(THREE.FloatType)
-      .load(hdr, (hdrEquirect) => {
+      .load(this.localDev ? hdr : 'https://cdn.jsdelivr.net/gh/philszalay/aguita-bubbles@master/src/main.hdr', (hdrEquirect) => {
         this.bgTexture1 = new THREE.VideoTexture(this.videoElement1);
         this.bgTexture2 = new THREE.VideoTexture(this.videoElement2);
 
@@ -373,7 +377,9 @@ export default class ThreeJsDraft {
           u_saturation: { value: 1.6 }
         };
 
-        this.addHelpers()
+        if (this.localDev) {
+          this.addHelpers()
+        }
 
         // Set material properties
         this.material.uniforms = this.uniforms;
@@ -393,7 +399,95 @@ export default class ThreeJsDraft {
          * Animation Loop
          */
         setInterval(this.animate.bind(this), 1000 / this.framesPerSecond);
+
+        // Initialize overlay buttons
+        this.initializeButtons();
       });
+  }
+
+  /**
+   * Add overlay button with custom title and position
+   */
+  addOverlayButton(x, y, page) {
+    // Create button element
+    const button = document.createElement('button');
+    button.className = 'overlay-button';
+
+    // Apply styles
+    Object.assign(button.style, {
+      position: 'absolute',
+      background: 'rgba(255, 255, 255, 0.9)',
+      border: '2px solid #333',
+      borderRadius: '8px',
+      padding: '12px 24px',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#333',
+      cursor: 'pointer',
+      zIndex: '10000',
+      transition: 'all 0.3s ease',
+      backdropFilter: 'blur(5px)'
+    });
+
+    // Add click handler to navigate to page
+    if (page) {
+      button.addEventListener('click', () => {
+        window.location.href = '/' + page;
+      });
+    }
+
+    // Store button data
+    const buttonData = {
+      element: button,
+      x: x, // percentage from left (0.0 to 1.0)
+      y: y, // percentage from top (0.0 to 1.0)
+    };
+
+    this.overlayButtons.push(buttonData);
+    document.body.appendChild(button);
+
+    // Position the button
+    this.positionButton(buttonData);
+
+    return buttonData;
+  }
+
+  /**
+   * Position a single button based on canvas dimensions
+   */
+  positionButton(buttonData) {
+    const canvasRect = this.canvas.getBoundingClientRect();
+
+    const buttonX = canvasRect.left + (canvasRect.width * buttonData.x);
+    const buttonY = canvasRect.top + (canvasRect.height * buttonData.y);
+
+    buttonData.element.style.left = buttonX + 'px';
+    buttonData.element.style.top = buttonY + 'px';
+    buttonData.element.style.transform = 'translate(-50%, -50%)';
+  }
+
+  /**
+   * Position all buttons (called on resize)
+   */
+  positionAllButtons() {
+    this.overlayButtons.forEach(buttonData => {
+      this.positionButton(buttonData);
+    });
+  }
+
+  /**
+   * Initialize buttons - add your buttons here
+   */
+  initializeButtons() {
+    // Example buttons - customize these as needed
+    this.addOverlayButton(0.75, 0.25, 'music-video');
+    this.addOverlayButton(0.25, 0.75, 'archive');
+    this.addOverlayButton(0.25, 0.55, 'art');
+    this.addOverlayButton(0.75, 0.75, 'store');
+    this.addOverlayButton(0.55, 0.75, 'info');
+    this.addOverlayButton(0.05, 0.75, 'commercial');
+    this.addOverlayButton(0.25, 0.15, 'stills');
   }
 
   addHelpers() {
@@ -489,7 +583,9 @@ export default class ThreeJsDraft {
 
     this.sphereTexture.needsUpdate = true;
 
-    this.stats.update()
+    if (this.localDev) {
+      this.stats.update();
+    }
 
     this.renderer.render(this.scene, this.camera);
   }
