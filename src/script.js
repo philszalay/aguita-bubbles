@@ -22,7 +22,7 @@ export default class ThreeJsDraft {
     this.overlayButtons = [];
 
     this.debug = false
-    this.localDev = true;
+    this.localDev = false;
 
     // get first to video elements of page
     const videos = document.querySelectorAll('video');
@@ -408,7 +408,7 @@ export default class ThreeJsDraft {
   /**
    * Add overlay button with custom title and position
    */
-  addOverlayButton(x, y, page) {
+  addOverlayButton(x, y, page, relativeWidth, relativeHeight = 0.08) {
     // Create button element
     const button = document.createElement('button');
     button.className = 'overlay-button';
@@ -416,32 +416,44 @@ export default class ThreeJsDraft {
     // Apply styles
     Object.assign(button.style, {
       position: 'absolute',
-      background: 'rgba(255, 255, 255, 0.9)',
-      border: '2px solid #333',
+      background: this.localDev ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+      border: this.localDev ? '2px solid #333' : 'none',
       borderRadius: '8px',
       padding: '12px 24px',
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '16px',
-      fontWeight: 'bold',
-      color: '#333',
       cursor: 'pointer',
       zIndex: '10000',
-      transition: 'all 0.3s ease',
-      backdropFilter: 'blur(5px)'
+      pointerEvents: 'auto',
+    });
+
+    // Forward mousemove events to canvas while on button
+    button.addEventListener('mousemove', (event) => {
+      this.mouseX = event.clientX;
+      this.mouseY = event.clientY;
+
+      const mousePosition = new THREE.Vector3(
+        (this.mouseX / window.innerWidth) * 2 - 1,
+        -(this.mouseY / window.innerHeight) * 2 + 1,
+        0
+      );
+
+      mousePosition.unproject(this.camera);
+      const dir = mousePosition.sub(this.camera.position).normalize();
+      const distance = -this.camera.position.z / dir.z;
+      this.mousePosition = this.camera.position.clone().add(dir.multiplyScalar(distance));
     });
 
     // Add click handler to navigate to page
-    if (page) {
-      button.addEventListener('click', () => {
-        window.location.href = '/' + page;
-      });
-    }
+    button.addEventListener('click', () => {
+      window.location.href = '/' + page;
+    });
 
     // Store button data
     const buttonData = {
       element: button,
       x: x, // percentage from left (0.0 to 1.0)
       y: y, // percentage from top (0.0 to 1.0)
+      relativeWidth: relativeWidth, // percentage of canvas width (0.0 to 1.0)
+      relativeHeight: relativeHeight, // percentage of canvas height (0.0 to 1.0)
     };
 
     this.overlayButtons.push(buttonData);
@@ -462,8 +474,14 @@ export default class ThreeJsDraft {
     const buttonX = canvasRect.left + (canvasRect.width * buttonData.x);
     const buttonY = canvasRect.top + (canvasRect.height * buttonData.y);
 
+    // Calculate dynamic width and height based on canvas size
+    const buttonWidth = canvasRect.width * buttonData.relativeWidth;
+    const buttonHeight = canvasRect.height * buttonData.relativeHeight;
+
     buttonData.element.style.left = buttonX + 'px';
     buttonData.element.style.top = buttonY + 'px';
+    buttonData.element.style.width = buttonWidth + 'px';
+    buttonData.element.style.height = buttonHeight + 'px';
     buttonData.element.style.transform = 'translate(-50%, -50%)';
   }
 
@@ -481,13 +499,14 @@ export default class ThreeJsDraft {
    */
   initializeButtons() {
     // Example buttons - customize these as needed
-    this.addOverlayButton(0.75, 0.25, 'music-video');
-    this.addOverlayButton(0.25, 0.75, 'archive');
-    this.addOverlayButton(0.25, 0.55, 'art');
-    this.addOverlayButton(0.75, 0.75, 'store');
-    this.addOverlayButton(0.55, 0.75, 'info');
-    this.addOverlayButton(0.05, 0.75, 'commercial');
-    this.addOverlayButton(0.25, 0.15, 'stills');
+    // Parameters: (x, y, page, relativeWidth, relativeHeight)
+    this.addOverlayButton(0.1875, 0.233, 'music-video', 0.175); // ~230px at 1920px width
+    this.addOverlayButton(0.43, 0.905, 'archive', 0.125); // ~170px at 1920px width
+    this.addOverlayButton(0.744, 0.227, 'art', 0.026); // ~50px at 1920px width
+    this.addOverlayButton(0.855, 0.572, 'store', 0.1); // ~135px at 1920px width
+    this.addOverlayButton(0.77, 0.889, 'info', 0.08); // ~100px at 1920px width
+    this.addOverlayButton(0.46, 0.104, 'commercial', 0.185); // ~250px at 1920px width
+    this.addOverlayButton(0.127, 0.675, 'stills', 0.095); // ~135px at 1920px width
   }
 
   addHelpers() {
