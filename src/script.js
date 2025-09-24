@@ -650,6 +650,15 @@ function initBubbles() {
 }
 
 function checkVideosAndInit() {
+  // Check if on mobile device and redirect to /commercial
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform));
+
+  if (isMobile) {
+    window.location.href = '/commercial';
+    return;
+  }
+
   const videos = document.querySelectorAll('video');
 
   // If no videos found, check again after a delay
