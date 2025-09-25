@@ -1,0 +1,19 @@
+<script>
+    const cartSVG = `
+      <svg id="Ebene_1" class="icon icon--cart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080">
+        <path d="M405.81,741a77.42,77.42,0,1,0,77.41,77.42A77.42,77.42,0,0,0,405.81,741Z"/>
+        <path d="M794.73,741a77.42,77.42,0,1,0,77.42,77.42A77.42,77.42,0,0,0,794.73,741Z"/>
+        <polygon points="836.74 306.35 361.49 306.35 254.12 306.35 254.12 242.07 86.51 242.07 86.51 319.18 242.27 319.18 308.82 718.5 361.49 718.5 836.74 718.5 889.41 718.5 958.1 306.35 836.74 306.35"/>
+      </svg>
+    `;
+  
+    window.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('svg.icon--cart').forEach(oldSVG => {
+        const temp = document.createElement('div');
+        temp.innerHTML = cartSVG.trim();
+        const newSVG = temp.firstElementChild;
+        newSVG.style.display = "block";
+        oldSVG.replaceWith(newSVG);
+      });
+    });
+  </script>

@@ -1,0 +1,74 @@
+<style>
+  .logos {
+    display: flex;
+    width: 100%;
+  }
+  
+  .logos > * {
+    flex: 1; /* Shorthand for flex: 1 1 0 */
+}
+  
+  @media screen and (max-width: 767px) {
+  .fe-block:has(.say-holla) {
+    grid-area: 1 / 2 / 2 / 10;
+  }
+    .fe-block:has(.founder-1) {
+    grid-area: 3 / 2 / 4 / 10;
+  }
+    .fe-block:has(.founder-2) {
+    grid-area: 5 / 2 / 6 / 10;
+  }
+      .fe-block:has(.coordinator) {
+    grid-area: 7 / 2 / 8 / 10;
+  }
+      .fe-block:has(.hop) {
+    grid-area: 9 / 2 / 10 / 10;
+  }
+      .fe-block:has(.hobd) {
+    grid-area: 11 / 2 / 12 / 10;
+  }
+      .fe-block:has(.cfo) {
+    grid-area: 13 / 2 / 14 / 10;
+  }
+      .fe-block:has(.west) {
+    grid-area: 15 / 2 / 16 / 10;
+  }
+      .fe-block:has(.us) {
+    grid-area: 17 / 2 / 18 / 10;
+  }
+      .fe-block:has(.east) {
+    grid-area: 19 / 2 / 20 / 10;
+  }
+      .fe-block:has(.midwest) {
+    grid-area: 21 / 2 / 22 / 10;
+  }
+      .fe-block:has(.info) {
+    grid-area: 24 / 2 / 32 / 10;
+  }
+      .fe-block:has(.press) {
+    grid-area: 34 / 2 / 35 / 10;
+  }
+      .fe-block:has(.inquiries) {
+    grid-area: 36 / 2 / 37 / 10;
+  }
+      .fe-block:has(.instagram) {
+    grid-area: 38 / 2 / 39 / 10;
+  }
+        .fe-block:has(.logos) {
+    grid-area: 40 / 2 / 41 / 10;
+  }
+  
+  .fluid-engine {
+    grid-template-rows: repeat(41, minmax(24px, auto)) !important;
+  }
+    .logos {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.logos > * {
+    flex: 1 1 20%;
+}
+  }
+</style>

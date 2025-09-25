@@ -1,0 +1,69 @@
+<style>
+    .Cart-inner {
+      color: black !important;
+    }
+  
+    .header-nav-item a {
+      color: black !important;
+    }
+  
+    .section-background {
+      background-color: #ededed !important;
+    }
+  
+    .page-section {
+      color: black !important;
+    }
+  
+    .gallery-grid-wrapper {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      gap: 10px !important; /* Adjust spacing as needed */
+      align-items: baseline;
+    }
+  
+  .gallery-grid-item-wrapper {
+     padding-bottom: 0 !important;
+    height: 100% !important;
+        display: flex;
+    flex-direction: column;
+    justify-content: end;
+  }
+  
+  .gallery-grid-item {
+    flex: 0 0 calc(11.11% - 10px) !important; /* Roughly 1/9 width minus gap */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+}
+  
+	img {
+      width: 100% !important;
+      height: auto !important;
+      object-fit: contain !important;
+      object-position: bottom !important;
+      position: relative !important;
+    }
+  
+  .sqs-block-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  @media screen and (max-width: 767px) and (orientation: portrait) {
+  .gallery-grid-item {
+    flex: 0 0 calc(33.33% - 10px) !important; /* 3 per row */
+  }
+    
+  .vertical-margin {
+    margin-bottom: 2em !important;
+  }
+
+    :not(.header--menu-open) .burger-inner .top-bun, :not(.header--menu-open) .burger-inner .patty, :not(.header--menu-open) .burger-inner .bottom-bun {
+      background-color: black;
+    }
+}
+</style>
