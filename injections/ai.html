@@ -1,0 +1,597 @@
+<div
+    style="position: absolute; top: 50%; left: 0; right: 0; margin: 0 auto;  transform: translateY(-50%); display: flex; width: 100%; flex-direction: column; align-items: center; justify-content: center; font-size: 20px; gap: 8px;">
+    <div style="display: flex; gap: 34px;">
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            DAVIDE VICARI
+        </a>
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            ELIAS LOPEZ
+        </a>
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            ERYNN LAMONT
+        </a>
+    </div>
+    <div style="display: flex; gap: 34px;">
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            MIGUEL THOMÉ
+        </a>
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            KYLE JON SHEPHARD
+        </a>
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            ZIKA LIU
+        </a>
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            CAMILA GRANDI
+        </a>
+    </div>
+    <div style="display: flex; gap: 34px;">
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            KATHARINA ARIES RIVERA
+        </a>
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            MAYAN TOLEDANO
+        </a>
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            ENEA COLOMBI
+        </a>
+        <a class="heavy-font" style="opacity: 0.5; pointer-events: none;">
+            DOMINIK STRÖHLE
+        </a>
+    </div>
+</div>
+<script>
+    const meta = [];
+
+    function moveDot(clientX) {
+        const rect = timeline.getBoundingClientRect();
+        let x = clientX - rect.left;
+        x = Math.max(0, Math.min(x, rect.width));
+        const percent = (x / rect.width) * 100;
+        dot.style.left = percent + '%';
+    }
+
+    let currentVideo = null;
+    let originalContainer = null;
+    let currentVideoIndex = 1; // Index starts at 1 because index 0 is the first video with special controls
+    let globalMuted = false;
+    let allVideoContainers = [];
+
+    // Function to generate desktop top control HTML
+    function getDesktopControlHTMLTop() {
+        return ``;
+    }
+
+    // Function to generate desktop bottom control HTML
+    function getDesktopControlHTMLBottom() {
+        return `
+        <div class="video-controls-bottom">
+            <span style="width: 15%;" id="artist-name"></span> 
+            <span style="width: 20%;" id="project-name"></span> 
+            <div id="timeline" style="position: relative; width: 25%; height: 4px; background: white; border-radius: 2px; cursor: pointer;">
+                <div id="dot" style="position: absolute; top: 50%; left: 0%; transform: translate(-50%, -50%); width: 13px; height: 13px; background: white; border-radius: 50%; cursor: grab;"></div> 
+            </div> 
+            <div style="display: flex; gap: 2em; align-items: center;">
+                <div id="backward" style="cursor: pointer; display: flex; align-items: center;">
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><polygon points="846.41 192.45 439.21 427.55 439.21 184.2 233.59 184.2 233.59 895.8 439.21 895.8 439.21 652.45 846.41 887.55 846.41 192.45"/></svg>
+                </div> 
+                <div id="play" style="cursor: pointer; display: flex; align-items: center;">
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><polygon points="840.98 540 239.02 192.45 239.02 887.55 840.98 540"/></svg>
+                </div> 
+                <div id="pause" style="cursor: pointer; display: flex; align-items: center;">
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><rect x="239.63" y="184.2" width="205.62" height="711.61"/><rect x="634.75" y="184.2" width="205.62" height="711.61"/></svg>
+                </div> 
+                <div id="forward" style="cursor: pointer; display: flex; align-items: center;"> 
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><polygon points="640.79 184.2 640.79 427.55 233.59 192.45 233.59 887.55 640.79 652.45 640.79 895.8 846.41 895.8 846.41 184.2 640.79 184.2"/></svg>
+                </div> 
+                <div id="mute" style="cursor: pointer; display: flex; align-items: center;">
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><path d="M850.43,602.93a237.74,237.74,0,0,0,9-65c0-91.77-52.05-171.26-128.16-210.93V483.78Z"/><path d="M731.28,658.83v90A239.09,239.09,0,0,0,784,711.54Z"/><rect x="517.87" y="13.69" width="123.78" height="1026.85" transform="translate(-202.92 564.34) rotate(-45)"/><polygon points="418.14 345.7 380.83 381.71 176.48 381.71 176.48 694.17 376.56 694.17 654.39 962.28 654.39 581.95 418.14 345.7"/><polygon points="654.39 406.9 654.39 117.72 507.23 259.73 654.39 406.9"/></svg>
+                </div> 
+            </div> 
+        </div>`;
+    }
+
+    // Function to generate mobile top control HTML
+    function getMobileControlHTMLTop() {
+        return `
+        <div class="video-controls-mobile-top">
+            <span class="heavy-font" style="font-size: 20px; text-align: right;" id="artist-name-mobile"></span>
+            <span id="project-name-mobile" style="flex: 1; font-size: 20px; text-align: left;"></span>
+        </div>`;
+    }
+
+    // Function to generate mobile bottom control HTML
+    function getMobileControlHTMLBottom() {
+        return `
+        <div class="video-controls-mobile-bottom">
+            <div class="mobile-timeline-row">
+                <div id="timeline-mobile" style="position: relative; width: 100%; height: 4px; background: white; border-radius: 2px; cursor: pointer;">
+                    <div id="dot-mobile" style="position: absolute; top: 50%; left: 0%; transform: translate(-50%, -50%); width: 13px; height: 13px; background: white; border-radius: 50%; cursor: grab;"></div> 
+                </div>
+            </div>
+            <div class="mobile-controls-row">
+                <div id="backward-mobile" style="cursor: pointer; display: flex; align-items: center;">
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><polygon points="846.41 192.45 439.21 427.55 439.21 184.2 233.59 184.2 233.59 895.8 439.21 895.8 439.21 652.45 846.41 887.55 846.41 192.45"/></svg>
+                </div> 
+                <div id="play-mobile" style="cursor: pointer; display: flex; align-items: center;">
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><polygon points="840.98 540 239.02 192.45 239.02 887.55 840.98 540"/></svg>
+                </div> 
+                <div id="pause-mobile" style="cursor: pointer; display: flex; align-items: center;">
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><rect x="239.63" y="184.2" width="205.62" height="711.61"/><rect x="634.75" y="184.2" width="205.62" height="711.61"/></svg>
+                </div> 
+                <div id="forward-mobile" style="cursor: pointer; display: flex; align-items: center;"> 
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><polygon points="640.79 184.2 640.79 427.55 233.59 192.45 233.59 887.55 640.79 652.45 640.79 895.8 846.41 895.8 846.41 184.2 640.79 184.2"/></svg>
+                </div> 
+                <div id="mute-mobile" style="cursor: pointer; display: flex; align-items: center;">
+                    <svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><path d="M850.43,602.93a237.74,237.74,0,0,0,9-65c0-91.77-52.05-171.26-128.16-210.93V483.78Z"/><path d="M731.28,658.83v90A239.09,239.09,0,0,0,784,711.54Z"/><rect x="517.87" y="13.69" width="123.78" height="1026.85" transform="translate(-202.92 564.34) rotate(-45)"/><polygon points="418.14 345.7 380.83 381.71 176.48 381.71 176.48 694.17 376.56 694.17 654.39 962.28 654.39 581.95 418.14 345.7"/><polygon points="654.39 406.9 654.39 117.72 507.23 259.73 654.39 406.9"/></svg>
+                </div> 
+            </div>
+        </div>`;
+    }
+
+
+    function createModal() {
+        const modal = document.createElement('div');
+        modal.id = 'video-modal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        modal.style.display = 'none';
+        modal.style.justifyContent = 'center';
+        modal.style.flexDirection = 'column';
+        modal.style.alignItems = 'center';
+        modal.style.zIndex = '9999';
+        modal.style.transition = 'opacity 0.3s ease';
+        modal.style.opacity = '0';
+        modal.style.gap = '20px';
+
+        // Close Button
+        const closeButton = document.createElement('span');
+        closeButton.innerHTML = '<svg style="fill: white;" width="20px" height="20px" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><polygon points="864.29 361.11 718.89 215.71 540 394.6 361.11 215.71 215.71 361.11 394.61 540 215.71 718.89 361.11 864.29 540 685.39 718.89 864.29 864.29 718.89 685.39 540 864.29 361.11"/></svg>';
+        closeButton.style.position = 'absolute';
+        closeButton.style.top = '20px';
+        closeButton.style.right = '20px';
+        closeButton.style.cursor = 'pointer';
+        closeButton.style.color = 'white';
+        closeButton.style.fontSize = '24px';
+        closeButton.style.zIndex = '10000';
+        closeButton.id = 'modal-close-button';
+
+        closeButton.addEventListener('click', closeModal);
+        modal.appendChild(closeButton);
+
+        // Add CSS for responsive controls
+        const controlCSS = `
+        <style>            
+            .video-controls-bottom {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 20px;
+                height: 1em;
+                margin-left: 25px;
+                margin-right: 25px;
+                gap: 2em;
+                pointer-events: auto;
+                z-index: 10;
+                width: calc(100% - 50px);
+                position: absolute;
+                bottom: 25px;
+            }
+            
+            .video-controls-mobile-top {
+                display: none;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 20px;
+                margin: 15px;
+                pointer-events: auto;
+                flex-direction: column;
+                z-index: 10;
+                width: calc(100% - 30px);
+            }
+            
+            .video-controls-mobile-bottom {
+                display: none;
+                flex-direction: column;
+                gap: 1em;
+                font-size: 20px;
+                margin: 15px;
+                pointer-events: auto;
+                z-index: 10;
+                width: calc(100% - 30px);
+            }
+            
+            .mobile-timeline-row {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                margin-bottom: 1em;
+            }
+            
+            .mobile-controls-row {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 1.5em;
+            }
+            
+            @media (max-width: 786px) {
+                .video-controls-bottom {
+                    display: none !important;
+                }
+                .video-controls-mobile-top, .video-controls-mobile-bottom {
+                    display: flex !important;
+                }
+                #modal-close-button {
+                    display: none !important;
+                }
+            }
+        </style>`;
+
+        // Generate only the CSS and top controls first
+        const topControlsHTML = controlCSS +
+            getDesktopControlHTMLTop() +
+            getMobileControlHTMLTop();
+        modal.insertAdjacentHTML('beforeend', topControlsHTML);
+        document.body.appendChild(modal);
+
+        return modal;
+    }
+
+    // Create the modal once, and add button listeners once
+    const modal = createModal();
+
+    // Set up timeline and dot event listeners for both desktop and mobile
+    function setupTimelineListeners(timelineId, dotId) {
+        const timeline = document.getElementById(timelineId);
+        const dot = document.getElementById(dotId);
+        let isDragging = false;
+
+        if (!timeline || !dot) return;
+
+        // Mouse events for desktop
+        dot.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            dot.style.cursor = 'grabbing';
+        });
+
+        // Touch events for mobile
+        dot.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDragging = true;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            dot.style.cursor = 'auto';
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            moveDotForTimeline(e.clientX, timeline, dot);
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            moveDotForTimeline(touch.clientX, timeline, dot);
+        });
+
+        timeline.addEventListener('click', (e) => {
+            if (!currentVideo) return;
+            const rect = timeline.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percent = clickX / rect.width;
+            currentVideo.currentTime = percent * currentVideo.duration;
+            moveDotForTimeline(e.clientX, timeline, dot);
+        });
+
+        timeline.addEventListener('touchstart', (e) => {
+            if (!currentVideo) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = timeline.getBoundingClientRect();
+            const clickX = touch.clientX - rect.left;
+            const percent = clickX / rect.width;
+            currentVideo.currentTime = percent * currentVideo.duration;
+            moveDotForTimeline(touch.clientX, timeline, dot);
+        });
+    }
+
+    function moveDotForTimeline(clientX, timeline, dot) {
+        const rect = timeline.getBoundingClientRect();
+        let x = clientX - rect.left;
+        x = Math.max(0, Math.min(x, rect.width));
+        const percent = (x / rect.width) * 100;
+        dot.style.left = percent + '%';
+    }
+
+    // Setup both desktop and mobile timelines
+    setupTimelineListeners('timeline', 'dot');
+    setupTimelineListeners('timeline-mobile', 'dot-mobile');
+
+    function closeModal() {
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            if (originalContainer && currentVideo) {
+                currentVideo.pause();  // Pause the video
+                currentVideo.muted = true;  // Ensure the video is muted upon closing
+                originalContainer.appendChild(currentVideo);
+                currentVideo.style.width = '';   // Reset width
+                currentVideo.style.height = '';  // Reset height
+                currentVideo.style.maxWidth = '';   // Reset max-width
+                currentVideo.style.maxHeight = '';  // Reset max-height
+                currentVideo.style.marginTop = '';  // Reset margin
+                currentVideo.removeEventListener('click', videoClickHandler);
+            }
+        }, 300);
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) { // Close if click is outside the video
+            closeModal();
+        }
+    });
+
+    const videoClickHandler = (e) => {
+        e.stopPropagation(); // Prevent the modal click event from being triggered
+        if (currentVideo.paused) {
+            currentVideo.play();
+        } else {
+            currentVideo.pause();
+        }
+    };
+
+    // Setup mute buttons for both desktop and mobile
+    function setupMuteButton(buttonId) {
+        const muteButton = document.getElementById(buttonId);
+        if (!muteButton) return;
+
+        muteButton.addEventListener('click', () => {
+            if (currentVideo) {
+                currentVideo.muted = !currentVideo.muted; // Toggle mute state
+                globalMuted = currentVideo.muted;
+                // Update both mute buttons
+                const desktopMute = document.getElementById('mute');
+                const mobileMute = document.getElementById('mute-mobile');
+                const icon = globalMuted ? mutedIcon : unmutedIcon;
+                if (desktopMute) desktopMute.innerHTML = icon;
+                if (mobileMute) mobileMute.innerHTML = icon;
+            }
+        });
+    }
+
+    setupMuteButton('mute');
+    setupMuteButton('mute-mobile');
+
+    const unmutedIcon = `<svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><polygon points="176.48 381.71 176.48 694.17 376.56 694.17 654.39 962.28 654.39 117.72 380.83 381.71 176.48 381.71"/><path d="M731.28,327V748.87c76.11-39.67,128.16-119.16,128.16-210.93S807.39,366.68,731.28,327Z"/></svg>`;
+    const mutedIcon = `<svg style="fill: white;" width="1em" height="1em" id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><path d="M850.43,602.93a237.74,237.74,0,0,0,9-65c0-91.77-52.05-171.26-128.16-210.93V483.78Z"/><path d="M731.28,658.83v90A239.09,239.09,0,0,0,784,711.54Z"/><rect x="517.87" y="13.69" width="123.78" height="1026.85" transform="translate(-202.92 564.34) rotate(-45)"/><polygon points="418.14 345.7 380.83 381.71 176.48 381.71 176.48 694.17 376.56 694.17 654.39 962.28 654.39 581.95 418.14 345.7"/><polygon points="654.39 406.9 654.39 117.72 507.23 259.73 654.39 406.9"/></svg>`;
+
+    // Setup control buttons for both desktop and mobile
+    function setupControlButtons() {
+        // Play buttons
+        ['play', 'play-mobile'].forEach(id => {
+            const button = document.getElementById(id);
+            if (button) {
+                button.addEventListener('click', () => {
+                    if (currentVideo) {
+                        currentVideo.play();
+                    }
+                });
+            }
+        });
+
+        // Pause buttons
+        ['pause', 'pause-mobile'].forEach(id => {
+            const button = document.getElementById(id);
+            if (button) {
+                button.addEventListener('click', () => {
+                    if (currentVideo) {
+                        currentVideo.pause();
+                    }
+                });
+            }
+        });
+
+        // Forward buttons
+        ['forward', 'forward-mobile'].forEach(id => {
+            const button = document.getElementById(id);
+            if (button) {
+                button.addEventListener('click', (event) => {
+                    if (currentVideoIndex === allVideoContainers.length - 1) {
+                        currentVideoIndex = 1;
+                    } else {
+                        currentVideoIndex++;
+                    }
+                    onVideoContainerClick(event, allVideoContainers[currentVideoIndex].querySelector('video'), allVideoContainers[currentVideoIndex], true);
+                });
+            }
+        });
+
+        // Backward buttons
+        ['backward', 'backward-mobile'].forEach(id => {
+            const button = document.getElementById(id);
+            if (button) {
+                button.addEventListener('click', (event) => {
+                    if (currentVideoIndex === 1) {
+                        currentVideoIndex = allVideoContainers.length - 1;
+                    } else {
+                        currentVideoIndex--;
+                    }
+                    onVideoContainerClick(event, allVideoContainers[currentVideoIndex].querySelector('video'), allVideoContainers[currentVideoIndex], true);
+                });
+            }
+        });
+    }
+
+    // Function gets called on video container click
+    function onVideoContainerClick(event, video, container, resetTime) {
+        if (originalContainer && currentVideo) {
+            currentVideo.pause();  // Pause the video
+            currentVideo.muted = true;  // Ensure the video is muted upon closing
+            originalContainer.appendChild(currentVideo);
+            currentVideo.style.width = '';   // Reset width
+            currentVideo.style.height = '';  // Reset height
+            currentVideo.style.maxWidth = '';   // Reset max-width
+            currentVideo.style.maxHeight = '';  // Reset max-height
+            currentVideo.style.marginTop = '';  // Reset margin
+        }
+        event.preventDefault();
+        currentVideo = video;
+        originalContainer = container; // Remember the original container
+        modal.style.display = 'flex';
+
+        setTimeout(() => {
+            currentVideo.addEventListener('click', videoClickHandler);
+
+            modal.style.opacity = '1';
+            currentVideo.muted = globalMuted;
+            // Update mute button icons for both desktop and mobile
+            const desktopMute = document.getElementById('mute');
+            const mobileMute = document.getElementById('mute-mobile');
+            const icon = globalMuted ? mutedIcon : unmutedIcon;
+            if (desktopMute) desktopMute.innerHTML = icon;
+            if (mobileMute) mobileMute.innerHTML = icon;
+            if (resetTime) {
+                currentVideo.currentTime = 0;  // Reset the video to the beginning of forwared/backward
+            }
+            currentVideo.play();        // Play video in modal
+
+            // Update the project name in both control bars
+            const desktopProjectName = document.getElementById('project-name');
+            const mobileProjectName = document.getElementById('project-name-mobile');
+            const projectName = meta[currentVideoIndex - 1].project;
+            if (desktopProjectName) desktopProjectName.textContent = projectName;
+            if (mobileProjectName) mobileProjectName.textContent = projectName;
+
+            // Update the artist name in both control bars
+            const desktopArtistName = document.getElementById('artist-name');
+            const mobileArtistName = document.getElementById('artist-name-mobile');
+            const artistName = meta[currentVideoIndex - 1].artist;
+            if (desktopArtistName) desktopArtistName.textContent = artistName;
+            if (mobileArtistName) mobileArtistName.textContent = artistName;
+        }, 10);
+
+        // Remove any existing bottom controls and videos from modal
+        const existingBottomControls = modal.querySelectorAll('.video-controls-bottom, .video-controls-mobile-bottom');
+        existingBottomControls.forEach(control => control.remove());
+
+        // Remove any existing videos from modal (except the one we're about to add)
+        const existingVideos = modal.querySelectorAll('video');
+        existingVideos.forEach(video => {
+            if (video !== currentVideo) {
+                video.remove();
+            }
+        });
+
+        currentVideo.style.width = 'auto';
+        currentVideo.style.height = 'auto';
+        currentVideo.style.maxWidth = 'calc(100% - 50px)'; // Adjust for modal
+        currentVideo.style.maxHeight = 'calc(100vh - 200px)'; // Leave space for top and bottom controls
+        currentVideo.style.margin = '0'; // Remove centering margin
+        modal.appendChild(currentVideo);
+
+        // Add bottom controls after the video
+        const bottomControlsHTML = getDesktopControlHTMLBottom() + getMobileControlHTMLBottom();
+        modal.insertAdjacentHTML('beforeend', bottomControlsHTML);
+
+        // Setup event listeners for the newly added controls
+        setupTimelineListeners('timeline', 'dot');
+        setupTimelineListeners('timeline-mobile', 'dot-mobile');
+        setupMuteButton('mute');
+        setupMuteButton('mute-mobile');
+        setupControlButtons();
+
+        // Add video-specific timeupdate event listener for both timelines
+        currentVideo.addEventListener('timeupdate', () => {
+            const percent = (currentVideo.currentTime / currentVideo.duration) * 100;
+            const desktopDot = document.getElementById('dot');
+            const mobileDot = document.getElementById('dot-mobile');
+            if (desktopDot) desktopDot.style.left = percent + '%';
+            if (mobileDot) mobileDot.style.left = percent + '%';
+        });
+    }
+
+    window.addEventListener('load', function () {
+        // Initialize allVideoContainers with sorting by position
+        allVideoContainers = Array.from(document.querySelectorAll('.plyr__video-wrapper'))
+            .sort((a, b) => {
+                const rectA = a.getBoundingClientRect();
+                const rectB = b.getBoundingClientRect();
+
+                // Sort by Y first, then X
+                if (rectA.top !== rectB.top) {
+                    return rectA.top - rectB.top;
+                }
+                return rectA.left - rectB.left;
+            });
+
+        setupControlButtons();
+
+        // This section is now handled in the initial definition above
+
+        allVideoContainers.forEach((container, index) => {
+            if (index === 0) { // This is the first video
+                const firstVideoControlsHTML = `<div style="display: inline-flex; align-items: center; justify-content: center; height: fit-content; position: absolute; bottom: 25px; left: 25px; pointer-events: auto; z-index: 10000;">
+            </div>`;
+                container.style.position = 'relative';
+                container.insertAdjacentHTML('beforeend', firstVideoControlsHTML);
+            } else {
+                const hoverText = document.createElement('div');
+                hoverText.className = 'hover-text';
+
+                // Create first line with heavy-font class
+                const artistText = document.createElement('div');
+                artistText.className = 'heavy-font';
+                artistText.innerText = meta[index - 1].artist;
+
+                // Create second line
+                const projectText = document.createElement('div');
+                projectText.innerText = meta[index - 1].project;
+
+                // Add both elements to hover text
+                hoverText.appendChild(artistText);
+                hoverText.appendChild(projectText);
+
+                hoverText.style.opacity = '0';
+                hoverText.style.position = 'absolute';
+                hoverText.style.bottom = '50%';
+                hoverText.style.left = '50%';
+                hoverText.style.transform = 'translate(-50%, 50%)';
+                hoverText.style.pointerEvents = 'none';
+                hoverText.style.zIndex = '10000';
+                hoverText.style.textAlign = 'center';
+                hoverText.style.transition = 'opacity 0.7s ease';
+                hoverText.style.whiteSpace = 'nowrap';
+                container.appendChild(hoverText);
+
+                const video = container.querySelector('video');
+                if (!video) return;
+                container.addEventListener('mouseenter', () => {
+                    hoverText.style.opacity = '1';
+                    video.play();
+                });
+                container.addEventListener('mouseleave', () => {
+                    hoverText.style.opacity = '0';
+                    video.pause();
+                });
+                container.addEventListener('click', (event) => {
+                    currentVideoIndex = index;
+                    onVideoContainerClick(event, video, container);
+                });
+            }
+        });
+    });
+</script>

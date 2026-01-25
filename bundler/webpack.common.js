@@ -18,8 +18,7 @@ module.exports = (env, argv) => {
       [
         new HtmlWebpackPlugin({
           template: path.resolve(__dirname, '../src/index.html'),
-          minify: true,
-          favicon: 'assets/icons/favicon.ico'
+          minify: true
         }),
         new MiniCSSExtractPlugin()
       ],

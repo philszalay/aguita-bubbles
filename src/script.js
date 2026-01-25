@@ -21,7 +21,7 @@ export default class ThreeJsDraft {
     this.canvas = canvas;
     this.overlayButtons = [];
 
-    this.debug = false
+    this.debug = false;
     this.localDev = false;
 
     // get first to video elements of page
@@ -138,21 +138,22 @@ export default class ThreeJsDraft {
       this.positionAllButtons();
     }, false);
 
-    this.canvas.addEventListener('mousemove', (event) => {
-      this.mouseX = event.clientX
-      this.mouseY = event.clientY
+    window.addEventListener('mousemove', (event) => {
+      this.mouseX = event.clientX;
+      this.mouseY = event.clientY;
 
       const mousePosition = new THREE.Vector3(
-        (this.mouseX / window.innerWidth) * 2 - 1,
-        -(this.mouseY / window.innerHeight) * 2 + 1,
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1,
         0
       );
 
       mousePosition.unproject(this.camera);
       const dir = mousePosition.sub(this.camera.position).normalize();
       const distance = -this.camera.position.z / dir.z;
+
       this.mousePosition = this.camera.position.clone().add(dir.multiplyScalar(distance));
-    })
+    });
 
     /**
      * Loading Manager
@@ -302,7 +303,7 @@ export default class ThreeJsDraft {
 
       const distance = dir.length(); // Calculate the distance
 
-      const gravitationFieldFactor = Math.exp(-distance);
+      let gravitationFieldFactor = Math.exp(-distance);
 
       if (gravitationFieldFactor < 0.05) {
         gravitationFieldFactor = 0;
@@ -408,10 +409,9 @@ export default class ThreeJsDraft {
   /**
    * Add overlay button with custom title and position
    */
-  addOverlayButton(x, y, page, relativeWidth, relativeHeight = 0.08) {
+  addOverlayButton(x, y, page, relativeWidth, relativeHeight) {
     // Create button element
     const button = document.createElement('button');
-    button.className = 'overlay-button';
 
     // Apply styles
     Object.assign(button.style, {
@@ -420,26 +420,7 @@ export default class ThreeJsDraft {
       border: this.localDev ? '2px solid #333' : 'none',
       borderRadius: '8px',
       padding: '12px 24px',
-      cursor: 'pointer',
-      zIndex: '10000',
-      pointerEvents: 'auto',
-    });
-
-    // Forward mousemove events to canvas while on button
-    button.addEventListener('mousemove', (event) => {
-      this.mouseX = event.clientX;
-      this.mouseY = event.clientY;
-
-      const mousePosition = new THREE.Vector3(
-        (this.mouseX / window.innerWidth) * 2 - 1,
-        -(this.mouseY / window.innerHeight) * 2 + 1,
-        0
-      );
-
-      mousePosition.unproject(this.camera);
-      const dir = mousePosition.sub(this.camera.position).normalize();
-      const distance = -this.camera.position.z / dir.z;
-      this.mousePosition = this.camera.position.clone().add(dir.multiplyScalar(distance));
+      zIndex: '10000'
     });
 
     // Add click handler to navigate to page
@@ -450,10 +431,10 @@ export default class ThreeJsDraft {
     // Store button data
     const buttonData = {
       element: button,
-      x: x, // percentage from left (0.0 to 1.0)
-      y: y, // percentage from top (0.0 to 1.0)
-      relativeWidth: relativeWidth, // percentage of canvas width (0.0 to 1.0)
-      relativeHeight: relativeHeight, // percentage of canvas height (0.0 to 1.0)
+      x, // percentage from left (0.0 to 1.0)
+      y, // percentage from top (0.0 to 1.0)
+      relativeWidth, // percentage of canvas width (0.0 to 1.0)
+      relativeHeight // percentage of canvas height (0.0 to 1.0)
     };
 
     this.overlayButtons.push(buttonData);
@@ -500,13 +481,11 @@ export default class ThreeJsDraft {
   initializeButtons() {
     // Example buttons - customize these as needed
     // Parameters: (x, y, page, relativeWidth, relativeHeight)
-    this.addOverlayButton(0.1875, 0.233, 'music-video', 0.175); // ~230px at 1920px width
-    this.addOverlayButton(0.43, 0.905, 'archive', 0.125); // ~170px at 1920px width
-    this.addOverlayButton(0.744, 0.227, 'art', 0.026); // ~50px at 1920px width
-    this.addOverlayButton(0.855, 0.572, 'store', 0.1); // ~135px at 1920px width
-    this.addOverlayButton(0.77, 0.889, 'info', 0.08); // ~100px at 1920px width
-    this.addOverlayButton(0.46, 0.104, 'commercial', 0.185); // ~250px at 1920px width
-    this.addOverlayButton(0.127, 0.675, 'stills', 0.095); // ~135px at 1920px width
+    this.addOverlayButton(0.36, 0.84, 'archive', 0.135, 0.1); // ~170px at 1920px width
+    this.addOverlayButton(0.76, 0.368, 'store', 0.15, 0.08); // ~135px at 1920px width
+    this.addOverlayButton(0.727, 0.78, 'info', 0.11, 0.1); // ~100px at 1920px width
+    this.addOverlayButton(0.455, 0.17, 'directors', 0.155, 0.1); // ~250px at 1920px width
+    this.addOverlayButton(0.185, 0.445, 'art', 0.1, 0.1); // ~135px at 1920px width
   }
 
   addHelpers() {
@@ -650,15 +629,6 @@ function initBubbles() {
 }
 
 function checkVideosAndInit() {
-  // Check if on mobile device and redirect to /commercial
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform));
-
-  if (isMobile) {
-    window.location.href = '/commercial';
-    return;
-  }
-
   const videos = document.querySelectorAll('video');
 
   // If no videos found, check again after a delay
