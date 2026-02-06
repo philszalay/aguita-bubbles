@@ -29,16 +29,14 @@ export default class ThreeJsDraft {
     this.videoElement1 = videos[0];
     this.videoElement2 = videos[1];
 
-    if (this.localDev) {
-      this.videoElement1.setAttribute('crossorigin', 'anonymous');
-      this.videoElement2.setAttribute('crossorigin', 'anonymous');
+    this.videoElement1.setAttribute('crossorigin', 'anonymous');
+    this.videoElement2.setAttribute('crossorigin', 'anonymous');
 
-      this.videoElement1.load();
-      this.videoElement2.load();
+    this.videoElement1.load();
+    this.videoElement2.load();
 
-      this.videoElement1.play();
-      this.videoElement2.play();
-    }
+    this.videoElement1.play();
+    this.videoElement2.play();
 
     // start video from beginning
     this.videoElement1.currentTime = 0;
@@ -596,6 +594,16 @@ export default class ThreeJsDraft {
 function initBubbles() {
   // add a canvas element to the body
   const canvas = document.createElement('canvas');
+
+  // prevent text selection and touch highlight
+  canvas.style.userSelect = 'none';
+  canvas.style.webkitUserSelect = 'none';
+  canvas.style.touchAction = 'none';
+  canvas.style.msTouchAction = 'none';
+  canvas.style.webkitTapHighlightColor = 'transparent';
+
+  // optional: prevent long press context menu
+  canvas.oncontextmenu = (e) => e.preventDefault();
 
   // Calculate the maximum size that fits in the window while maintaining 16:9 aspect ratio
   let width = window.innerWidth;

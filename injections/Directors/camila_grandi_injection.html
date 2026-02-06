@@ -1,42 +1,62 @@
 <script>
-   const meta = [
-    {
-        "artist": "Lancome",
-        "project": "Advanced Génifique Yeux"
-    },
-    {
-        "artist": "Lexus",
-        "project": "LEXUS GX Launch"
-    },
-    {
-        "artist": "Bmw",
-        "project": "The Commanding Presence"
-    },
-    {
-        "artist": "Mercedes",
-        "project": "AMG 35"
-    },
-    {
-        "artist": "Infinix",
-        "project": "Infinix"
-    },
-    {
-        "artist": "Cadillac",
-        "project": "All New Cadillac"
-    },
-    {
-        "artist": "Hennessy",
-        "project": "V.S.O.P"
-    },
-    {
-        "artist": "Oppo",
-        "project": "Flash Charge"
-    },
-    {
-        "artist": "Apple",
-        "project": "MAC"
-    },
-];
+    const meta = [
+        {
+            "artist": "Mon Laferte",
+            "project": "Otra Noche De Llorar"
+        },
+        {
+            "artist": "Mon Laferte",
+            "project": "NO+SAD"
+        },
+        {
+            "artist": "Esteman Dani Spalla",
+            "project": "Amantes"
+        },
+        {
+            "artist": "Paloma Mami",
+            "project": "COPY+PASTE"
+        },
+        {
+            "artist": "Mon Laferte",
+            "project": "Tenochtitlán"
+        },
+        {
+            "artist": "Mon Laferte, NATHY PELUSO",
+            "project": "La Tirana"
+        },
+        {
+            "artist": "Guaynaa",
+            "project": "Funeral"
+        },
+        {
+            "artist": "Paloma Mami",
+            "project": "Hakiá"
+        },
+        {
+            "artist": "Don Julio",
+            "project": "Las Botellas"
+        },
+        {
+            "artist": "Don Julio",
+            "project": "Teaser"
+        },
+        {
+            "artist": "Don Julio",
+            "project": "Por Amor"
+        },
+        {
+            "artist": "Don Julio",
+            "project": "Frio"
+        },
+        {
+            "artist": "Don Julio",
+            "project": "Ice Block"
+        },
+        {
+            "artist": "Don Julio",
+            "project": "Besos Congelados"
+        }
+    ];
 
     function moveDot(clientX) {
         const rect = timeline.getBoundingClientRect();
@@ -548,7 +568,7 @@
                 container.insertAdjacentHTML('beforeend', firstVideoControlsHTML);
                 const backFirstButton = document.getElementById('back-first');
                 backFirstButton.addEventListener('click', () => {
-                    window.location.href = '/commercial';
+                    window.location.href = '/directors';
                 });
             } else {
                 const hoverText = document.createElement('div');
