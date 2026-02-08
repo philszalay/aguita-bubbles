@@ -1,22 +1,22 @@
 <style>
-body:not(.sqs-edit-mode-active) .page-section:first-of-type {
-  height: 100vh !important;
-}
-
-body:not(.sqs-edit-mode-active) .page-section:nth-of-type(2) .fluid-engine {
-  grid-template-columns: repeat(3, 1fr) !important;
-  grid-template-rows: unset !important;
-}
-
-body:not(.sqs-edit-mode-active) .page-section:nth-of-type(2) .fluid-engine .fe-block {
-  grid-area: unset !important;
-  aspect-ratio: 1 / 1;
-}
-
-@media screen and (max-width: 767px) {
   body:not(.sqs-edit-mode-active) .page-section:first-of-type {
-    height: 100svh !important;
-    padding: 0 !important;
+    height: 100vh !important;
   }
-} 
+
+  body:not(.sqs-edit-mode-active) .page-section:nth-of-type(2) .fluid-engine {
+    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-rows: unset !important;
+  }
+
+  body:not(.sqs-edit-mode-active) .page-section:nth-of-type(2) .fluid-engine .fe-block {
+    grid-area: unset !important;
+    aspect-ratio: 1 / 1;
+  }
+
+  @media screen and (max-width: 767px) {
+    body:not(.sqs-edit-mode-active) .page-section:first-of-type {
+      height: 100svh !important;
+      padding: 0 !important;
+    }
+  }
 </style>
