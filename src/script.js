@@ -29,15 +29,6 @@ export default class ThreeJsDraft {
     this.videoElement1 = videos[0];
     this.videoElement2 = videos[1];
 
-    this.videoElement1.setAttribute('crossorigin', 'anonymous');
-    this.videoElement2.setAttribute('crossorigin', 'anonymous');
-
-    this.videoElement1.load();
-    this.videoElement2.load();
-
-    this.videoElement1.play();
-    this.videoElement2.play();
-
     // start video from beginning
     this.videoElement1.currentTime = 0;
     this.videoElement2.currentTime = 0;
@@ -661,17 +652,19 @@ function checkVideosAndInit() {
   };
 
   // Add event listeners to all videos
+  // crossOrigin must be set BEFORE the browser fetches the resource.
+  // Since Squarespace already injected the videos, we force a reload with
+  // crossOrigin='anonymous' so the browser re-fetches them with an Origin
+  // header and the CDN can respond with Access-Control-Allow-Origin.
   videos.forEach(video => {
-    if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
+    const src = video.currentSrc || video.src;
+    video.crossOrigin = 'anonymous';
+    video.addEventListener('canplay', checkAllLoaded, { once: true });
+    if (src) {
+      video.src = src;
+      video.load();
+    } else if (video.readyState >= 3) {
       checkAllLoaded();
-    } else {
-      video.addEventListener('canplay', checkAllLoaded, { once: true });
-
-      // Fallback if video fails to load
-      video.addEventListener('error', () => {
-        console.warn('Video failed to load, continuing anyway');
-        checkAllLoaded();
-      }, { once: true });
     }
   });
 

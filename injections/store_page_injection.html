@@ -64,7 +64,7 @@
         const productBlocks = document.querySelectorAll('.product-block');
 
         // List of prices for different products
-        const priceList = ['$0', '$40', '$0', '$0', '$30', '$30', '$0', '$30', '$40', '$40', '$28'];
+        const priceList = ['Sold out', '$40', 'Sold out', 'Sold out', '$40', '$40', 'Sold out', 'Sold out', 'Sold out', '$30'];
 
         productBlocks.forEach((block, index) => {
             if (!block.querySelector('.overlay')) {
@@ -89,7 +89,11 @@
             const buttons = block.querySelectorAll('button');
 
             buttons.forEach(button => {
-                button.style.setProperty('display', 'block', 'important');
+                if (priceList[index] === 'Sold out') {
+                    button.style.setProperty('display', 'none', 'important');
+                } else {
+                    button.style.setProperty('display', 'block', 'important');
+                }
             });
 
             // Show overlay on mouse enter
