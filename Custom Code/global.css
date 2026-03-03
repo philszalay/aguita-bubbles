@@ -16,8 +16,18 @@
   font-family: "ABC Monument Grotesk Regular" !important;
 }
 
-.header-nav-item a {
+.header-nav-item a,
+.header-nav-folder-title-text {
   font-family: "ABC Monument Grotesk Heavy" !important;
+}
+
+.header-nav-folder-item-content {
+  background-image: none !important;
+  font-family: "ABC Monument Grotesk Heavy" !important;
+}
+
+.header-nav-folder-content {
+  background-color: transparent !important;
 }
 
 #header {
@@ -160,4 +170,13 @@
   justify-content: center;
   align-items: center;
   white-space: nowrap
+}
+
+/* Folder Click Through */
+.header-nav-folder-title[data-href^="/click-"]+.header-nav-folder-content .header-nav-folder-item:first-child {
+  display: none;
+}
+
+.header-nav-folder-title[aria-expanded='true']+.header-nav-folder-content .header-nav-folder-item:first-child {
+  display: block !important;
 }
