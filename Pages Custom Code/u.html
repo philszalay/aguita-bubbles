@@ -1,0 +1,160 @@
+<style>
+  .Cart-inner {
+    color: black !important;
+  }
+
+  .header-nav-item a {
+    color: black !important;
+  }
+
+  .section-background {
+    background-color: #ededed !important;
+  }
+
+  .page-section {
+    color: black !important;
+  }
+
+  .gallery-grid-wrapper {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    /* Adjust spacing as needed */
+    align-items: baseline;
+  }
+
+  .gallery-grid-item-wrapper {
+    padding-bottom: 0 !important;
+    height: 100% !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+  }
+
+  .gallery-grid-item {
+    flex: 0 0 calc(11.11% - 10px) !important;
+    /* Roughly 1/9 width minus gap */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  img {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+    object-position: bottom !important;
+    position: relative !important;
+  }
+
+  .sqs-block-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  @media screen and (max-width: 767px) and (orientation: portrait) {
+    .gallery-grid-item {
+      flex: 0 0 calc(33.33% - 10px) !important;
+      /* 3 per row */
+    }
+
+    .vertical-margin {
+      margin-bottom: 2em !important;
+    }
+
+    :not(.header--menu-open) .burger-inner .top-bun,
+    :not(.header--menu-open) .burger-inner .patty,
+    :not(.header--menu-open) .burger-inner .bottom-bun {
+      background-color: black;
+    }
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Get the name elements by id 1..5
+    const nameEls = [];
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById(String(i));
+      if (el) {
+        nameEls.push(el);
+      }
+    }
+
+    // List of all images on the current page (in DOM order)
+    const images = Array.from(document.querySelectorAll('figure'));
+
+    console.log("FIGURE", images);
+
+    // Track current selection
+    let selectedIndex = null;
+
+    function clearSelection() {
+      nameEls.forEach(el => el.classList.remove('heavy-font'));
+    }
+
+    function showAllImages() {
+      images.forEach(img => {
+        img.style.display = ''; // reset inline style
+      });
+    }
+
+    function showOnlyImageRange(startIndex, count) {
+      console.log("START", startIndex);
+      console.log("COUNT", count);
+      console.log("IMAGES", images);
+      // First hide all images
+      images.forEach(img => {
+        img.style.setProperty('display', 'none', 'important');
+      });
+
+      // Then show only the specified range
+      for (let i = startIndex; i < startIndex + count && i < images.length; i++) {
+        images[i].style.display = '';
+      }
+    }
+
+    nameEls.forEach((el, idx) => {
+      el.addEventListener('click', () => {
+        if (selectedIndex === idx) {
+          // Clicking the same name again → deselect
+          clearSelection();
+          showAllImages();
+          selectedIndex = null;
+        } else {
+          // New selection
+          clearSelection();
+          el.classList.add('heavy-font');
+
+          showAllImages();
+
+          // Show only specific image ranges based on selection
+          switch (idx) {
+            case 0: // Cajas Del Mar - show only first 5 images
+              showOnlyImageRange(0, 5);
+              break;
+            case 1: // Javier James - show only next 12 images
+              showOnlyImageRange(5, 12);
+              break;
+            case 2: // Llanto Vaquero - show only next 16 images
+              showOnlyImageRange(17, 16);
+              break;
+            case 3: // Miguel Casco - show only next 9 images
+              showOnlyImageRange(33, 9);
+              break;
+            case 4: // Gibrán Turón - show only last 10 images
+              // Assuming we know the total number of images
+              if (images.length >= 10) {
+                showOnlyImageRange(images.length - 10, 10);
+              }
+              break;
+          }
+
+          selectedIndex = idx;
+        }
+      });
+    });
+  });
+</script>
